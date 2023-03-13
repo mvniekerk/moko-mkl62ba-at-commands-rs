@@ -2,6 +2,7 @@ use super::types::{LoraJoinMode as LoraJoinModeVal, LoraRegion as LoraRegionVal,
 use atat::serde_at::HexStr;
 use atat_derive::AtatResp;
 use heapless::String;
+use crate::lora::types::LoraJoiningStatus;
 
 /// Lora Join Mode
 #[derive(Debug, Clone, AtatResp, PartialEq)]
@@ -61,9 +62,52 @@ impl From<LoraClassGet> for LoraClass {
     }
 }
 
+/// Joining
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraJoinResponse {
+    pub joining: String<20>
+}
+
+impl From<LoraJoinResponse> for LoraJoiningStatus {
+    fn from(value: LoraJoinResponse) -> Self {
+        value.joining.into()
+    }
+}
+
+/// Max TX length
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraMaxTxLength {
+    pub max: u16
+}
+
+/// Send bytes response, unprocessed. Needs to change : to , in order for AtAt to work
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraSendBytesResponseUnprocessed {
+    pub val: String<288>
+}
+
+/// Parsed send bytes response
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraSendBytesResponse {
+    pub retransmission_times: u8,
+    pub port: u8,
+    pub data: HexStr<[u8; 256]>
+}
+
+impl From<LoraSendBytesResponseUnprocessed> for LoraSendBytesResponse {
+    fn from(value: LoraSendBytesResponseUnprocessed) -> Self {
+        let mut v: String<304> = String::new();
+        let val = value.val;
+        let val = val.replace(':', ",");
+        v.push_str("+SENDB: ").unwrap();
+        v.push_str(&val).unwrap();
+        serde_at::from_str(v.as_str()).unwrap()
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::lora::responses::{LoraClassGet, LoraRegionGet};
+    use crate::lora::responses::{LoraClassGet, LoraRegionGet, LoraSendBytesResponse, LoraSendBytesResponseUnprocessed};
     use crate::lora::types::{LoraClass, LoraRegion as LoraRegionVal};
     use heapless::String;
 
@@ -83,5 +127,20 @@ mod tests {
         };
         let r: LoraClass = r.into();
         assert_eq!(r, LoraClass::ClassC)
+    }
+
+    #[test]
+    fn lora_send_bytes_response() {
+        let r = LoraSendBytesResponseUnprocessed {
+            val: "3:12:ABCDEF".into()
+        };
+        let r: LoraSendBytesResponse = r.into();
+        assert_eq!(r.retransmission_times, 3);
+        assert_eq!(r.port, 12);
+        let mut v = [0; 256];
+        v[0] = 0xAB;
+        v[1] = 0xCD;
+        v[2] = 0xEF;
+        assert_eq!(*r.data, v);
     }
 }

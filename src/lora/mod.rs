@@ -1,16 +1,21 @@
+use core::str::FromStr;
 use atat::serde_at::HexStr;
 use atat_derive::AtatCmd;
 use heapless::String;
+use serde_at::SerializeOptions;
 
 pub mod responses;
 pub mod types;
 
 use responses::{
     AppEuiGet as AppEuiGetVal, AppKeyGet as AppKeyGetVal, DevEuiGet as DevEuiGetVal, LoraJoinMode,
-    LoraRegionGet as LoraRegionGetVal, LoraClassGet as LoraClassGetVal
+    LoraRegionGet as LoraRegionGetVal, LoraClassGet as LoraClassGetVal,
+    LoraJoinResponse, LoraMaxTxLength, LoraSendBytesResponseUnprocessed
 };
 
 use types::{LoraRegion, LoraClass};
+
+use crate::general::responses::OnOff;
 
 /// 4.3.1 Get Lora Join Mode
 #[derive(Clone, Debug, AtatCmd)]
@@ -59,6 +64,7 @@ impl DevEuiSet {
                 hex_in_caps: true,
                 delimiter_after_nibble_count: 2,
                 delimiter: ':',
+                skip_last_0_values: false
             },
         }
     }
@@ -85,6 +91,7 @@ impl AppEuiSet {
                 hex_in_caps: true,
                 delimiter_after_nibble_count: 2,
                 delimiter: ':',
+                skip_last_0_values: false
             },
         }
     }
@@ -111,6 +118,7 @@ impl AppKeySet {
                 hex_in_caps: true,
                 delimiter_after_nibble_count: 2,
                 delimiter: ':',
+                skip_last_0_values: false
             },
         }
     }
@@ -152,11 +160,122 @@ impl LoraClassSet {
     }
 }
 
+/// 4.3.10 Join using OTAA
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+JOINING", LoraJoinResponse)]
+pub struct LoraJoinOtaa {}
+
+/// 4.3.11 Join status
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+JOIN_STD=?", LoraJoinResponse)]
+pub struct LoraJoinOtaaStatus {}
+
+/// 4.3.12 Auto join get
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+AUTO_JOIN=?", OnOff)]
+pub struct LoraAutoJoinGet {}
+
+/// 4.3.12 Auto join set
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+AUTO_JOIN", OnOff, quote_escape_strings = false )]
+pub struct LoraAutoJoinSet {
+    pub on: String<6>,
+}
+
+impl LoraAutoJoinSet {
+    pub fn on() -> Self {
+        Self {
+            on: String::from("ON"),
+        }
+    }
+    pub fn off() -> Self {
+        Self {
+            on: String::from("OFF"),
+        }
+    }
+}
+
+/// 4.4.1 Maximum TX length get
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+TX_LEN=?", LoraMaxTxLength, quote_escape_strings = false )]
+pub struct LoraMaxTxLengthGet {}
+
+/// 4.4.2 Uplink confirmation get
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+CONFIRM=?", OnOff)]
+pub struct UplinkConfirmGet {}
+
+/// 4.4.2 Uplink confirmation set
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+CONFIRM", OnOff, quote_escape_strings = false )]
+pub struct UplinkConfirmSet {
+    pub on: String<6>,
+}
+
+impl UplinkConfirmSet {
+    pub fn on() -> Self {
+        Self {
+            on: String::from("ON"),
+        }
+    }
+    pub fn off() -> Self {
+        Self {
+            on: String::from("OFF"),
+        }
+    }
+}
+
+/// 4.4.3 Send bytes, unprocessed. The AT command sent is wrong and needs , replaced with :
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+SENDB", LoraSendBytesResponseUnprocessed, quote_escape_strings = false )]
+pub struct SendBytesUnprocessed {
+    pub retransmission_times: u8,
+    pub port: u8,
+    pub data: HexStr<[u8; 256]>
+}
+
+/// 4.4.3 Send bytes, processed.
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+SENDB", LoraSendBytesResponseUnprocessed, quote_escape_strings = false )]
+pub struct SendBytes {
+    pub val: String<288>
+}
+
+impl SendBytesUnprocessed {
+    pub fn processed(self) -> SendBytes {
+        let val: String<288> = serde_at::ser::to_string(&self, "", SerializeOptions {
+            value_sep: false,
+            cmd_prefix: "",
+            termination: "",
+            quote_escape_strings: false,
+        }).unwrap();
+        let val = val.replace(',', ":");
+        SendBytes {
+            val: String::from_str(&val).unwrap()
+        }
+    }
+}
+
+impl SendBytes {
+    pub fn new(retransmission_times: u8, port: u8, data: [u8; 256]) -> Self {
+        let data = HexStr {
+            val: data,
+            add_0x_with_encoding: false,
+            hex_in_caps: true,
+            delimiter_after_nibble_count: 0,
+            delimiter: ' ',
+            skip_last_0_values: true,
+        };
+        SendBytesUnprocessed {
+            retransmission_times, port, data
+        }.processed()
+    }
+}
 
 
 #[cfg(test)]
 mod tests {
-    use crate::lora::{AppEuiGet, AppEuiSet, AppKeyGet, AppKeySet, DevEuiGet, DevEuiSet, JoinModeGet, JoinModeSet, LoraClassGet, LoraRegionGet};
+    use crate::lora::{AppEuiGet, AppEuiSet, AppKeyGet, AppKeySet, DevEuiGet, DevEuiSet, JoinModeGet, JoinModeSet, LoraAutoJoinGet, LoraAutoJoinSet, LoraClassGet, LoraJoinOtaa, LoraJoinOtaaStatus, LoraMaxTxLengthGet, LoraRegionGet, SendBytes, SendBytesUnprocessed, UplinkConfirmGet, UplinkConfirmSet};
     use atat::AtatCmd;
     use crate::lora::types::{LoraClass, LoraRegion};
 
@@ -236,4 +355,62 @@ mod tests {
         let k = LoraClass::ClassC.set_cmd().as_bytes();
         assert_eq!(k, b"AT+CLASS=C\r\n");
     }
+
+    #[test]
+    fn lora_join_otaa() {
+        let k = LoraJoinOtaa {}.as_bytes();
+        assert_eq!(k, b"AT+JOINING\r\n")
+    }
+
+    #[test]
+    fn lora_join_otaa_status() {
+        let k = LoraJoinOtaaStatus {}.as_bytes();
+        assert_eq!(k, b"AT+JOIN_STD=?\r\n")
+    }
+
+    #[test]
+    fn lora_auto_join_get() {
+        let k = LoraAutoJoinGet {}.as_bytes();
+        assert_eq!(k, b"AT+AUTO_JOIN=?\r\n");
+    }
+
+    #[test]
+    fn lora_auto_join_set() {
+        let k = LoraAutoJoinSet::on().as_bytes();
+        assert_eq!(k, b"AT+AUTO_JOIN=ON\r\n");
+        let k = LoraAutoJoinSet::off().as_bytes();
+        assert_eq!(k, b"AT+AUTO_JOIN=OFF\r\n");
+    }
+
+    #[test]
+    fn max_tx_len_get() {
+        let k = LoraMaxTxLengthGet {}.as_bytes();
+        assert_eq!(k, b"AT+TX_LEN=?\r\n");
+    }
+
+    #[test]
+    fn uplink_confirm_get() {
+        let k = UplinkConfirmGet {}.as_bytes();
+        assert_eq!(k, b"AT+CONFIRM=?\r\n");
+    }
+
+    #[test]
+    fn uplink_confirm_set() {
+        let k = UplinkConfirmSet::on().as_bytes();
+        assert_eq!(k, b"AT+CONFIRM=ON\r\n");
+        let k = UplinkConfirmSet::off().as_bytes();
+        assert_eq!(k, b"AT+CONFIRM=OFF\r\n");
+    }
+
+    #[test]
+    fn send_bytes() {
+        let mut v = [0; 256];
+        v[0] = 0xAB;
+        v[1] = 0xCD;
+        v[2] = 0xEF;
+        v[3] = 0x01;
+        let k = SendBytes::new(3, 12, v).as_bytes();
+        assert_eq!(k, b"AT+SENDB=3:12:ABCDEF01\r\n");
+    }
+
 }
