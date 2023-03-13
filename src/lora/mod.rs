@@ -1,6 +1,6 @@
-use core::str::FromStr;
 use atat::serde_at::HexStr;
 use atat_derive::AtatCmd;
+use core::str::FromStr;
 use heapless::String;
 use serde_at::SerializeOptions;
 
@@ -8,12 +8,13 @@ pub mod responses;
 pub mod types;
 
 use responses::{
-    AppEuiGet as AppEuiGetVal, AppKeyGet as AppKeyGetVal, DevEuiGet as DevEuiGetVal, LoraJoinMode,
-    LoraRegionGet as LoraRegionGetVal, LoraClassGet as LoraClassGetVal,
-    LoraJoinResponse, LoraMaxTxLength, LoraSendBytesResponseUnprocessed
+    AppEuiGet as AppEuiGetVal, AppKeyGet as AppKeyGetVal, DevEuiGet as DevEuiGetVal,
+    LoraClassGet as LoraClassGetVal, LoraJoinMode, LoraJoinResponse, LoraMaxTxLength,
+    LoraReceivedBytesResponseRaw, LoraRegionGet as LoraRegionGetVal,
+    LoraSendBytesResponseUnprocessed,
 };
 
-use types::{LoraRegion, LoraClass};
+use types::{LoraClass, LoraRegion};
 
 use crate::general::responses::OnOff;
 
@@ -64,7 +65,7 @@ impl DevEuiSet {
                 hex_in_caps: true,
                 delimiter_after_nibble_count: 2,
                 delimiter: ':',
-                skip_last_0_values: false
+                skip_last_0_values: false,
             },
         }
     }
@@ -91,7 +92,7 @@ impl AppEuiSet {
                 hex_in_caps: true,
                 delimiter_after_nibble_count: 2,
                 delimiter: ':',
-                skip_last_0_values: false
+                skip_last_0_values: false,
             },
         }
     }
@@ -118,7 +119,7 @@ impl AppKeySet {
                 hex_in_caps: true,
                 delimiter_after_nibble_count: 2,
                 delimiter: ':',
-                skip_last_0_values: false
+                skip_last_0_values: false,
             },
         }
     }
@@ -133,7 +134,7 @@ pub struct LoraRegionGet {}
 #[derive(Clone, Debug, AtatCmd)]
 #[at_cmd("+REGION", LoraRegionGetVal, quote_escape_strings = false)]
 pub struct LoraRegionSet {
-    pub region: String<10>
+    pub region: String<10>,
 }
 
 impl LoraRegionSet {
@@ -151,7 +152,7 @@ pub struct LoraClassGet {}
 #[derive(Clone, Debug, AtatCmd)]
 #[at_cmd("+CLASS", LoraClassGetVal, quote_escape_strings = false)]
 pub struct LoraClassSet {
-    pub class: String<2>
+    pub class: String<2>,
 }
 
 impl LoraClassSet {
@@ -177,7 +178,7 @@ pub struct LoraAutoJoinGet {}
 
 /// 4.3.12 Auto join set
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+AUTO_JOIN", OnOff, quote_escape_strings = false )]
+#[at_cmd("+AUTO_JOIN", OnOff, quote_escape_strings = false)]
 pub struct LoraAutoJoinSet {
     pub on: String<6>,
 }
@@ -197,7 +198,7 @@ impl LoraAutoJoinSet {
 
 /// 4.4.1 Maximum TX length get
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+TX_LEN=?", LoraMaxTxLength, quote_escape_strings = false )]
+#[at_cmd("+TX_LEN=?", LoraMaxTxLength, quote_escape_strings = false)]
 pub struct LoraMaxTxLengthGet {}
 
 /// 4.4.2 Uplink confirmation get
@@ -207,7 +208,7 @@ pub struct UplinkConfirmGet {}
 
 /// 4.4.2 Uplink confirmation set
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+CONFIRM", OnOff, quote_escape_strings = false )]
+#[at_cmd("+CONFIRM", OnOff, quote_escape_strings = false)]
 pub struct UplinkConfirmSet {
     pub on: String<6>,
 }
@@ -227,31 +228,50 @@ impl UplinkConfirmSet {
 
 /// 4.4.3 Send bytes, unprocessed. The AT command sent is wrong and needs , replaced with :
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+SENDB", LoraSendBytesResponseUnprocessed, quote_escape_strings = false )]
+#[at_cmd(
+    "+SENDB",
+    LoraSendBytesResponseUnprocessed,
+    quote_escape_strings = false
+)]
 pub struct SendBytesUnprocessed {
     pub retransmission_times: u8,
     pub port: u8,
-    pub data: HexStr<[u8; 256]>
+    pub data: HexStr<[u8; 256]>,
 }
 
 /// 4.4.3 Send bytes, processed.
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+SENDB", LoraSendBytesResponseUnprocessed, quote_escape_strings = false )]
+#[at_cmd(
+    "+SENDB",
+    LoraSendBytesResponseUnprocessed,
+    quote_escape_strings = false
+)]
 pub struct SendBytes {
-    pub val: String<288>
+    pub val: String<288>,
 }
 
 impl SendBytesUnprocessed {
     pub fn processed(self) -> SendBytes {
-        let val: String<288> = serde_at::ser::to_string(&self, "", SerializeOptions {
-            value_sep: false,
-            cmd_prefix: "",
-            termination: "",
-            quote_escape_strings: false,
-        }).unwrap();
-        let val = val.replace(',', ":");
+        let mut val: String<288> = serde_at::ser::to_string(
+            &self,
+            "",
+            SerializeOptions {
+                value_sep: false,
+                cmd_prefix: "",
+                termination: "",
+                quote_escape_strings: false,
+            },
+        )
+        .unwrap();
+        unsafe {
+            for b in String::as_mut_vec(&mut val) {
+                if *b == b',' {
+                    *b = b':';
+                }
+            }
+        }
         SendBytes {
-            val: String::from_str(&val).unwrap()
+            val: String::from_str(&val).unwrap(),
         }
     }
 }
@@ -267,17 +287,29 @@ impl SendBytes {
             skip_last_0_values: true,
         };
         SendBytesUnprocessed {
-            retransmission_times, port, data
-        }.processed()
+            retransmission_times,
+            port,
+            data,
+        }
+        .processed()
     }
 }
 
+/// 4.4.5 Receive bytes or ACK from the server
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+RECVB=?", LoraReceivedBytesResponseRaw, quote_escape_strings = false)]
+pub struct LoraReceiveBytes {}
 
 #[cfg(test)]
 mod tests {
-    use crate::lora::{AppEuiGet, AppEuiSet, AppKeyGet, AppKeySet, DevEuiGet, DevEuiSet, JoinModeGet, JoinModeSet, LoraAutoJoinGet, LoraAutoJoinSet, LoraClassGet, LoraJoinOtaa, LoraJoinOtaaStatus, LoraMaxTxLengthGet, LoraRegionGet, SendBytes, SendBytesUnprocessed, UplinkConfirmGet, UplinkConfirmSet};
-    use atat::AtatCmd;
     use crate::lora::types::{LoraClass, LoraRegion};
+    use crate::lora::{
+        AppEuiGet, AppEuiSet, AppKeyGet, AppKeySet, DevEuiGet, DevEuiSet, JoinModeGet, JoinModeSet,
+        LoraAutoJoinGet, LoraAutoJoinSet, LoraClassGet, LoraJoinOtaa, LoraJoinOtaaStatus,
+        LoraMaxTxLengthGet, LoraReceiveBytes, LoraRegionGet, SendBytes, SendBytesUnprocessed,
+        UplinkConfirmGet, UplinkConfirmSet,
+    };
+    use atat::AtatCmd;
 
     #[test]
     fn join_mode_get() {
@@ -413,4 +445,9 @@ mod tests {
         assert_eq!(k, b"AT+SENDB=3:12:ABCDEF01\r\n");
     }
 
+    #[test]
+    fn receive_bytes() {
+        let k = LoraReceiveBytes {}.as_bytes();
+        assert_eq!(k, b"AT+RECVB=?\r\n");
+    }
 }

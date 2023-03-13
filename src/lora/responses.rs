@@ -1,8 +1,8 @@
-use super::types::{LoraJoinMode as LoraJoinModeVal, LoraRegion as LoraRegionVal, LoraClass};
+use super::types::{LoraClass, LoraJoinMode as LoraJoinModeVal, LoraRegion as LoraRegionVal};
+use crate::lora::types::LoraJoiningStatus;
 use atat::serde_at::HexStr;
 use atat_derive::AtatResp;
 use heapless::String;
-use crate::lora::types::LoraJoiningStatus;
 
 /// Lora Join Mode
 #[derive(Debug, Clone, AtatResp, PartialEq)]
@@ -65,7 +65,7 @@ impl From<LoraClassGet> for LoraClass {
 /// Joining
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct LoraJoinResponse {
-    pub joining: String<20>
+    pub joining: String<20>,
 }
 
 impl From<LoraJoinResponse> for LoraJoiningStatus {
@@ -77,13 +77,13 @@ impl From<LoraJoinResponse> for LoraJoiningStatus {
 /// Max TX length
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct LoraMaxTxLength {
-    pub max: u16
+    pub max: u16,
 }
 
 /// Send bytes response, unprocessed. Needs to change : to , in order for AtAt to work
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct LoraSendBytesResponseUnprocessed {
-    pub val: String<288>
+    pub val: String<1044>,
 }
 
 /// Parsed send bytes response
@@ -91,25 +91,93 @@ pub struct LoraSendBytesResponseUnprocessed {
 pub struct LoraSendBytesResponse {
     pub retransmission_times: u8,
     pub port: u8,
-    pub data: HexStr<[u8; 256]>
+    pub data: HexStr<[u8; 256]>,
 }
 
 impl From<LoraSendBytesResponseUnprocessed> for LoraSendBytesResponse {
     fn from(value: LoraSendBytesResponseUnprocessed) -> Self {
-        let mut v: String<304> = String::new();
-        let val = value.val;
-        let val = val.replace(':', ",");
-        v.push_str("+SENDB: ").unwrap();
-        v.push_str(&val).unwrap();
-        serde_at::from_str(v.as_str()).unwrap()
+        let mut val = value.val;
+        unsafe {
+            for b in String::as_mut_vec(&mut val) {
+                if *b == b':' {
+                    *b = b',';
+                }
+            }
+        }
+        serde_at::from_str(val.as_str()).unwrap()
+    }
+}
+
+/// Received bytes response, raw.
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraReceivedBytesResponseRaw {
+    pub value: String<1060>,
+}
+
+/// Parsed send bytes response
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraReceivedBytesAckResponse {
+    pub rssi: i32,
+    pub snr: f32,
+    pub ack: String<6>,
+}
+
+/// Parsed send bytes response
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct LoraReceivedBytesDataResponse {
+    pub rssi: i32,
+    pub snr: f32,
+    pub port: u8,
+    pub length: u16,
+    pub data: HexStr<[u8; 256]>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum LoraReceivedBytes {
+    None,
+    Ack(LoraReceivedBytesAckResponse),
+    Data(LoraReceivedBytesDataResponse),
+}
+
+impl From<LoraReceivedBytesResponseRaw> for LoraReceivedBytes {
+    fn from(value: LoraReceivedBytesResponseRaw) -> Self {
+        if value.value.is_empty() {
+            Self::None
+        } else {
+            let mut val = value.value;
+            unsafe {
+                for b in String::as_mut_vec(&mut val) {
+                    if *b == b':' {
+                        *b = b',';
+                    }
+                }
+            }
+            if val.ends_with(",ACK") {
+                Self::Ack(serde_at::from_str(val.as_str()).unwrap())
+            } else {
+                Self::Data(serde_at::from_str(val.as_str()).unwrap())
+            }
+        }
+    }
+}
+
+impl LoraReceivedBytesResponseRaw {
+    pub fn processed(self) -> LoraReceivedBytes {
+        self.into()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::lora::responses::{LoraClassGet, LoraRegionGet, LoraSendBytesResponse, LoraSendBytesResponseUnprocessed};
+    use crate::lora::responses::{
+        LoraClassGet, LoraReceivedBytes, LoraReceivedBytesAckResponse,
+        LoraReceivedBytesDataResponse, LoraReceivedBytesResponseRaw, LoraRegionGet,
+        LoraSendBytesResponse, LoraSendBytesResponseUnprocessed,
+    };
     use crate::lora::types::{LoraClass, LoraRegion as LoraRegionVal};
+    use core::str::FromStr;
     use heapless::String;
+    use serde_at::HexStr;
 
     #[test]
     fn lora_region() {
@@ -122,9 +190,7 @@ mod tests {
 
     #[test]
     fn lora_class() {
-        let r = LoraClassGet {
-            class: "C".into()
-        };
+        let r = LoraClassGet { class: "C".into() };
         let r: LoraClass = r.into();
         assert_eq!(r, LoraClass::ClassC)
     }
@@ -132,7 +198,7 @@ mod tests {
     #[test]
     fn lora_send_bytes_response() {
         let r = LoraSendBytesResponseUnprocessed {
-            val: "3:12:ABCDEF".into()
+            val: "3:12:ABCDEF".into(),
         };
         let r: LoraSendBytesResponse = r.into();
         assert_eq!(r.retransmission_times, 3);
@@ -142,5 +208,53 @@ mod tests {
         v[1] = 0xCD;
         v[2] = 0xEF;
         assert_eq!(*r.data, v);
+    }
+
+    #[test]
+    fn received_bytes() {
+        let value = String::from_str("").unwrap();
+        let k = LoraReceivedBytesResponseRaw { value }.processed();
+        assert_eq!(k, LoraReceivedBytes::None);
+
+        let value = String::from_str("-104:1:ACK").unwrap();
+        let k = LoraReceivedBytesResponseRaw { value }.processed();
+        assert_eq!(
+            k,
+            LoraReceivedBytes::Ack(LoraReceivedBytesAckResponse {
+                rssi: -104,
+                snr: 1.0,
+                ack: "ACK".into(),
+            })
+        );
+
+        let value = String::from_str("-102:-4.0:8:8:3132333435363738").unwrap();
+        let k = LoraReceivedBytesResponseRaw { value }.processed();
+        let mut data = [0; 256];
+        data[0] = 0x31;
+        data[1] = 0x32;
+        data[2] = 0x33;
+        data[3] = 0x34;
+        data[4] = 0x35;
+        data[5] = 0x36;
+        data[6] = 0x37;
+        data[7] = 0x38;
+        let data = HexStr {
+            val: data,
+            add_0x_with_encoding: false,
+            hex_in_caps: true,
+            delimiter_after_nibble_count: 0,
+            delimiter: ' ',
+            skip_last_0_values: false,
+        };
+        assert_eq!(
+            k,
+            LoraReceivedBytes::Data(LoraReceivedBytesDataResponse {
+                rssi: -102,
+                snr: -4.0,
+                port: 8,
+                length: 8,
+                data,
+            })
+        );
     }
 }

@@ -1,5 +1,5 @@
-use heapless::String;
 use crate::lora::{LoraClassSet, LoraRegionSet};
+use heapless::String;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoraJoinMode {
@@ -42,7 +42,7 @@ impl From<LoraRegion> for String<10> {
             LoraRegion::Us915 => "US915".into(),
             LoraRegion::Au915 => "AU915".into(),
             LoraRegion::As923 => "AS923".into(),
-            LoraRegion::Unknown => "".into()
+            LoraRegion::Unknown => "".into(),
         }
     }
 }
@@ -55,13 +55,12 @@ impl LoraRegion {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoraClass {
     ClassA,
     ClassB,
     ClassC,
-    Unknown
+    Unknown,
 }
 
 impl From<String<2>> for LoraClass {
@@ -70,7 +69,7 @@ impl From<String<2>> for LoraClass {
             "A" => Self::ClassA,
             "B" => Self::ClassB,
             "C" => Self::ClassC,
-            _ => Self::Unknown
+            _ => Self::Unknown,
         }
     }
 }
@@ -81,16 +80,14 @@ impl From<LoraClass> for String<2> {
             LoraClass::ClassA => "A".into(),
             LoraClass::ClassB => "B".into(),
             LoraClass::ClassC => "C".into(),
-            LoraClass::Unknown => "".into()
+            LoraClass::Unknown => "".into(),
         }
     }
 }
 
 impl LoraClass {
     pub fn set_cmd(self) -> LoraClassSet {
-        LoraClassSet {
-            class: self.into()
-        }
+        LoraClassSet { class: self.into() }
     }
 }
 
@@ -101,7 +98,7 @@ pub enum LoraJoiningStatus {
     JoinFailed,
     BusyError,
     InAbpModeError,
-    Unknown
+    Unknown,
 }
 
 impl From<String<20>> for LoraJoiningStatus {
@@ -112,7 +109,7 @@ impl From<String<20>> for LoraJoiningStatus {
             "JOIN FAILED" => Self::JoinFailed,
             "ERROR(-3)" => Self::BusyError,
             "ERROR(-2)" => Self::InAbpModeError,
-            _ => Self::Unknown
+            _ => Self::Unknown,
         }
     }
 }
