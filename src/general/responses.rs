@@ -95,7 +95,6 @@ impl From<AtatError> for Error {
             AtatError::CmsError(_) => Self::Unknown,
             AtatError::ConnectionError(_) => Self::CouldNotJoinTheNetwork,
             AtatError::Custom => Self::Unknown,
-            _ => Self::Unknown
         }
     }
 }

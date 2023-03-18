@@ -43,13 +43,14 @@ where
                 error!("Failed handle URC: {:?}", e);
             }
         }
-        self.client.send(req).map_err(|e| match e {
-            nb::Error::Other(ate) => {
-                error!("{=[u8]:a}", req.as_bytes());
-                ate.into()
-            }
-            nb::Error::WouldBlock => Error::Unknown,
-        })
+        // self.client.send(req).map_err(|e| match e {
+        //     nb::Error::Other(ate) => {
+        //         error!("{=[u8]:a}", req.as_bytes());
+        //         ate.into()
+        //     }
+        //     nb::Error::WouldBlock => Error::Unknown,
+        // })
+        Err(Error::Unknown)
     }
 
     // TODO error
