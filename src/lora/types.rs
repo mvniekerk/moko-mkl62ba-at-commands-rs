@@ -1,5 +1,5 @@
-use crate::lora::{LoraClassSet, LoraRegionSet};
 use heapless::String;
+use crate::lora::commands::{LoraClassSet, LoraRegionSet};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoraJoinMode {

@@ -29,14 +29,14 @@ heapless = "0.7.15"
 bbqueue = { version = "0.5", features = ["thumbv6"]}
 
 [patch.crates-io]
-embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-futures = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-net = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-net-driver = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
-embassy-net-driver-channel = { git = "https://github.com/embassy-rs/embassy", rev = "771806be790a2758f1314d6460defe7c2f0d3e99" }
+embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-futures = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-net = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-net-driver = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
+embassy-net-driver-channel = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
 
 [profile.dev]
 debug = 2

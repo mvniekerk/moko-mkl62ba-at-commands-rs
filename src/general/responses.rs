@@ -1,6 +1,8 @@
 use atat::serde_at::HexStr;
 use atat_derive::AtatResp;
 use heapless::String;
+use atat::Error as AtatError;
+use defmt::Format;
 
 /// OK response
 #[derive(Debug, Clone, AtatResp, PartialEq)]
@@ -26,6 +28,88 @@ impl OnOff {
     }
     pub fn is_off(&self) -> bool {
         self.on_off.as_str().eq("OFF")
+    }
+}
+
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct ErrorResponse {
+    pub error: String<20>
+}
+
+pub enum Error {
+    /// ERROR (-1)
+    AtCommandError,
+
+    /// ERROR (-2)
+    AtParameterError,
+
+    /// ERROR (-3)
+    Busy,
+
+    /// ERROR (-5)
+    CouldNotJoinTheNetwork,
+
+    /// ERROR (-7)
+    Timeout,
+    Unknown
+}
+
+impl Into<Error> for ErrorResponse {
+    fn into(self) -> Error {
+        match self.error.as_str() {
+            "ERROR (-1)" => Error::AtCommandError,
+            "ERROR (-2)" => Error::AtParameterError,
+            "ERROR (-3)" => Error::Busy,
+            "ERROR (-5)" => Error::CouldNotJoinTheNetwork,
+            "ERROR (-7)" => Error::Timeout,
+            _ => Error::Unknown
+        }
+    }
+}
+
+impl Into<AtatError> for ErrorResponse {
+    fn into(self) -> AtatError {
+        match self.error.as_str() {
+            "ERROR (-1)" => AtatError::Error,
+            "ERROR (-2)" => AtatError::Parse,
+            "ERROR (-3)" => AtatError::Overflow,
+            "ERROR (-5)" => AtatError::Error,
+            "ERROR (-7)" => AtatError::Timeout,
+            _ => AtatError::Error
+        }
+    }
+}
+
+impl From<AtatError> for Error {
+    fn from(value: AtatError) -> Self {
+        match value {
+            AtatError::Read => Self::AtCommandError,
+            AtatError::Write => Self::AtCommandError,
+            AtatError::Timeout => Self::Timeout,
+            AtatError::InvalidResponse => Self::AtCommandError,
+            AtatError::Aborted => Self::AtCommandError,
+            AtatError::Overflow => Self::Busy,
+            AtatError::Parse => Self::AtParameterError,
+            AtatError::Error => Self::AtParameterError,
+            AtatError::CmeError(_) => Self::Unknown,
+            AtatError::CmsError(_) => Self::Unknown,
+            AtatError::ConnectionError(_) => Self::CouldNotJoinTheNetwork,
+            AtatError::Custom => Self::Unknown,
+            _ => Self::Unknown
+        }
+    }
+}
+
+impl Format for Error {
+    fn format(&self, f: defmt::Formatter) {
+        match self {
+            Error::AtCommandError => defmt::write!(f, "AtCommandError"),
+            Error::AtParameterError => defmt::write!(f, "AtParameterError"),
+            Error::Busy => defmt::write!(f, "Busy"),
+            Error::CouldNotJoinTheNetwork => defmt::write!(f, "CouldNotJoinTheNetwork"),
+            Error::Timeout => defmt::write!(f, "Timeout"),
+            Error::Unknown => defmt::write!(f, "Unknown"),
+        }
     }
 }
 
