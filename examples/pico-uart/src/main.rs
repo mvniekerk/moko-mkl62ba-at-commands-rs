@@ -2,8 +2,13 @@
 #![no_main]
 #![feature(type_alias_impl_trait)]
 
+extern crate alloc;
+
+#[global_allocator]
+static HEAP: Heap = Heap::empty();
+
 use core::str::FromStr;
-use defmt::{ info, unwrap};
+use defmt::{ info, unwrap, error};
 use embassy_executor::Spawner;
 use embassy_executor::_export::StaticCell;
 use embassy_rp::interrupt;
@@ -14,6 +19,7 @@ use embedded_io::asynch::Read;
 use {defmt_rtt as _, panic_probe as _};
 
 use atat::bbqueue::BBBuffer;
+use embedded_alloc::Heap;
 use atat::{AtDigester, IngressManager};
 use moko_mkl62ba_at_commands::client::MokoMkl62BaClient;
 use moko_mkl62ba_at_commands::urc::URCMessages;
@@ -37,9 +43,9 @@ const URC_CAPACITY: usize = RX_SIZE * 3;
 // Timer frequency in Hz
 const TIMER_HZ: u32 = 1000;
 
-type AtDigesterIngressManager = u32;
-// type AtDigesterIngressManager =
-//     IngressManager<AtDigester<URCMessages<URC_RX_SIZE>>, ATAT_RX_SIZE, RES_CAPACITY, URC_CAPACITY>;
+// type AtDigesterIngressManager = u32;
+type AtDigesterIngressManager =
+    IngressManager<AtDigester<URCMessages<URC_RX_SIZE>>, ATAT_RX_SIZE, RES_CAPACITY, URC_CAPACITY>;
 
 macro_rules! singleton {
     ($val:expr) => {{
@@ -86,13 +92,17 @@ async fn main(spawner: Spawner) {
         )
         .build(queues);
 
-    // unwrap!(spawner.spawn(reader(rx, ingress)));
-    unwrap!(spawner.spawn(reader(rx, 1)));
+    unwrap!(spawner.spawn(reader(rx, ingress)));
+    // unwrap!(spawner.spawn(reader(rx, 1)));
 
-    // let mut client = MokoMkl62BaClient::new(client, rp_timer);
-    // if let Err(e) = client.verify_com_is_working() {
-    //     error!("Error verifying com is working: {:?}", e);
-    // }
+    let mut client = MokoMkl62BaClient::new(client, rp_timer);
+    if let Err(e) = client.verify_com_is_working() {
+        error!("Error verifying com is working: {:?}", e);
+    } else {
+        info!("Com is working");
+    }
+
+
 }
 
 #[embassy_executor::task]
