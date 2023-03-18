@@ -5,11 +5,10 @@ edition = "2021"
 
 [dependencies]
 moko-mkl62ba-at-commands = { path = "../../" }
-cyw43 = { path = "../../../cyw43", features = ["defmt", "firmware-logs"]}
 embassy-executor = { version = "0.1.0",  features = ["defmt", "integrated-timers"] }
 embassy-time = { version = "0.1.0",  features = ["defmt", "defmt-timestamp-uptime"] }
 embassy-rp = { version = "0.1.0",  features = ["defmt", "unstable-traits", "nightly", "unstable-pac", "time-driver"] }
-embassy-net = { version = "0.1.0", features = ["defmt", "tcp", "dhcpv4", "medium-ethernet", "unstable-traits", "nightly"] }
+#embassy-net = { version = "0.1.0", features = ["defmt", "tcp", "dhcpv4", "medium-ethernet", "unstable-traits", "nightly"] }
 embassy-sync = { version = "0.1.0", features = ["defmt", "nightly"] }
 atomic-polyfill = "0.1.5"
 static_cell = "1.0"
@@ -25,8 +24,13 @@ futures = { version = "0.3.17", default-features = false, features = ["async-awa
 embedded-hal-1 = { package = "embedded-hal", version = "1.0.0-alpha.9" }
 embedded-hal-async = { version = "0.2.0-alpha.0" }
 embedded-io = { version = "0.4.0", features = ["async", "defmt"] }
-heapless = "0.7.15"
-bbqueue = { version = "0.5", features = ["thumbv6"]}
+heapless = "0.7"
+bbqueue = { version = "0.5", features = ["thumbv6", "defmt_0_3"]}
+
+atat = { git = "https://github.com/mvniekerk/atat.git", commit = "7bb16dbebe0ec493fd6fa444f811182da98d9654", default-features=false, features = ["derive", "bytes", "hex_str_arrays"] }
+
+fugit = { version ="0.3",  default-features = false }
+nb = { version = "1", default-features = false }
 
 [patch.crates-io]
 embassy-executor = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
@@ -34,9 +38,6 @@ embassy-time = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f4
 embassy-futures = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
 embassy-sync = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
 embassy-rp = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
-embassy-net = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
-embassy-net-driver = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
-embassy-net-driver-channel = { git = "https://github.com/embassy-rs/embassy", rev = "2c9f289f40b0c5dcbbcdb24cc7beda37a79a7287" }
 
 [profile.dev]
 debug = 2
