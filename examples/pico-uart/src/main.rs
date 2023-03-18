@@ -8,7 +8,7 @@ extern crate alloc;
 static HEAP: Heap = Heap::empty();
 
 use core::str::FromStr;
-use defmt::{ info, unwrap, error};
+use defmt::{error, info, unwrap};
 use embassy_executor::Spawner;
 use embassy_executor::_export::StaticCell;
 use embassy_rp::interrupt;
@@ -19,11 +19,13 @@ use embedded_io::asynch::Read;
 use {defmt_rtt as _, panic_probe as _};
 
 use atat::bbqueue::BBBuffer;
-use embedded_alloc::Heap;
 use atat::{AtDigester, IngressManager};
+use embassy_time::{Duration, Timer};
+use embedded_alloc::Heap;
 use moko_mkl62ba_at_commands::client::MokoMkl62BaClient;
+use moko_mkl62ba_at_commands::lora::responses::LoraReceivedBytes;
+use moko_mkl62ba_at_commands::lora::types::{LoraJoinMode, LoraJoiningStatus, LoraRegion};
 use moko_mkl62ba_at_commands::urc::URCMessages;
-
 
 // Chunk size in bytes when sending data. Higher value results in better
 // performance, but introduces also higher stack memory footprint. Max value: 8192.
@@ -102,7 +104,99 @@ async fn main(spawner: Spawner) {
         info!("Com is working");
     }
 
+    if let Err(e) = client.at_echo_set(false) {
+        error!("Error setting echo: {:?}", e);
+    } else {
+        info!("Echo set to false");
+    }
 
+    if let Err(e) = client.join_mode_set(LoraJoinMode::Otaa) {
+        error!("Error setting join mode: {:?}", e);
+    } else {
+        info!("Join mode set to OTAA");
+    }
+
+    if let Err(e) = client.dev_eui_set(0x0123456789ABCDEF) {
+        error!("Error setting dev eui: {:?}", e);
+    } else {
+        info!("Dev EUI set");
+    }
+
+    if let Err(e) = client.app_eui_set(0x0) {
+        error!("Error setting app eui: {:?}", e);
+    } else {
+        info!("App EUI set");
+    }
+
+    if let Err(e) = client.app_key_set(0x1233456789ABCDEF_0123456789ABCDEF) {
+        error!("Error setting app key: {:?}", e);
+    } else {
+        info!("App key set");
+    }
+
+    if let Err(e) = client.lora_region_set(LoraRegion::Eu868) {
+        error!("Error setting lora region: {:?}", e);
+    } else {
+        info!("Lora region set");
+    }
+
+    if let Err(e) = client.auto_join_set(true) {
+        error!("Error setting auto join: {:?}", e);
+    } else {
+        info!("Auto join set");
+    }
+
+    if let Err(e) = client.lora_join_otaa() {
+        error!("Error joining: {:?}", e);
+    } else {
+        info!("Started joining OTAA");
+    }
+
+    let mut joined = false;
+    for i in 0..100 {
+        let status = client.lora_join_status();
+        match status {
+            Ok(status) => match status {
+                LoraJoiningStatus::Joined => {
+                    info!("Joined");
+                    joined = true;
+                    break;
+                }
+                LoraJoiningStatus::Joining => {
+                    info!("Joining");
+                }
+                LoraJoiningStatus::JoinFailed => {
+                    info!("Join failed");
+                }
+                LoraJoiningStatus::InAbpModeError => {
+                    error!("In ABP mode");
+                }
+                LoraJoiningStatus::BusyError => {
+                    error!("Busy");
+                }
+                LoraJoiningStatus::Unknown => {
+                    error!("Unknown error");
+                }
+            },
+
+            Err(e) => {
+                error!("Error getting join status: {:?}", e);
+            }
+        }
+        Timer::after(Duration::from_secs(1)).await;
+    }
+
+    if !joined {
+        error!("Failed to join");
+        return;
+    }
+
+    match client.send(3, 12, b"Hello from Moko") {
+        Ok(_d) => {
+            info!("Sent bytes");
+        }
+        Err(e) => error!("Error sending: {:?}", e),
+    }
 }
 
 #[embassy_executor::task]
@@ -126,7 +220,6 @@ async fn reader(mut rx: BufferedUartRx<'static, UART1>, mut ingress: AtDigesterI
                     heapless::String::<64>::from_str(core::str::from_utf8_unchecked(&total_buf))
                         .unwrap()
                 };
-                // info!(">{:?}", s);
                 index = 0;
                 total_buf = [0; 64];
             }
@@ -136,7 +229,6 @@ async fn reader(mut rx: BufferedUartRx<'static, UART1>, mut ingress: AtDigesterI
         let s = unsafe {
             heapless::String::<64>::from_str(core::str::from_utf8_unchecked(&total_buf)).unwrap()
         };
-        // info!(">{:?}", s);
     }
 }
 

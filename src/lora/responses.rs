@@ -15,7 +15,7 @@ impl LoraJoinMode {
         match self.join_mode.as_str() {
             "OTAA" => LoraJoinModeVal::Otaa,
             "ABP" => LoraJoinModeVal::Abp,
-            _ => LoraJoinModeVal::Unknown,
+            _ => LoraJoinModeVal::_Unknown,
         }
     }
 }

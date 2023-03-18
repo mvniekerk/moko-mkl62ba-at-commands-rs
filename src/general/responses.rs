@@ -1,8 +1,8 @@
 use atat::serde_at::HexStr;
-use atat_derive::AtatResp;
-use heapless::String;
 use atat::Error as AtatError;
+use atat_derive::AtatResp;
 use defmt::Format;
+use heapless::String;
 
 /// OK response
 #[derive(Debug, Clone, AtatResp, PartialEq)]
@@ -33,7 +33,7 @@ impl OnOff {
 
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct ErrorResponse {
-    pub error: String<20>
+    pub error: String<20>,
 }
 
 pub enum Error {
@@ -51,7 +51,7 @@ pub enum Error {
 
     /// ERROR (-7)
     Timeout,
-    Unknown
+    Unknown,
 }
 
 impl Into<Error> for ErrorResponse {
@@ -62,7 +62,7 @@ impl Into<Error> for ErrorResponse {
             "ERROR (-3)" => Error::Busy,
             "ERROR (-5)" => Error::CouldNotJoinTheNetwork,
             "ERROR (-7)" => Error::Timeout,
-            _ => Error::Unknown
+            _ => Error::Unknown,
         }
     }
 }
@@ -75,7 +75,7 @@ impl Into<AtatError> for ErrorResponse {
             "ERROR (-3)" => AtatError::Overflow,
             "ERROR (-5)" => AtatError::Error,
             "ERROR (-7)" => AtatError::Timeout,
-            _ => AtatError::Error
+            _ => AtatError::Error,
         }
     }
 }

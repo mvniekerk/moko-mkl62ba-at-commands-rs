@@ -1,11 +1,11 @@
-use heapless::String;
 use crate::lora::commands::{LoraClassSet, LoraRegionSet};
+use heapless::String;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoraJoinMode {
     Otaa,
     Abp,
-    Unknown,
+    _Unknown,
 }
 
 #[derive(Debug, Clone, PartialEq)]

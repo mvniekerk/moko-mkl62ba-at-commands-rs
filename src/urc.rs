@@ -3,8 +3,8 @@
 //! This is just used internally, but needs to be public for passing [URCMessages] as a generic to
 //! [AtDigester](atat::digest::AtDigester): `AtDigester<URCMessages>`.
 
-use atat::{AtatUrc, Parser};
 use atat::digest::ParseError;
+use atat::{AtatUrc, Parser};
 
 /// URC definitions, needs to passed as generic of [AtDigester](atat::digest::AtDigester): `AtDigester<URCMessages>`
 #[derive(Debug, PartialEq, Eq)]

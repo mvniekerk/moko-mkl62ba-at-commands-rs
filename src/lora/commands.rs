@@ -226,9 +226,9 @@ impl UplinkConfirmSet {
 /// 4.4.3 Send bytes, unprocessed. The AT command sent is wrong and needs , replaced with :
 #[derive(Clone, Debug, AtatCmd)]
 #[at_cmd(
-"+SENDB",
-LoraSendBytesResponseUnprocessed,
-quote_escape_strings = false
+    "+SENDB",
+    LoraSendBytesResponseUnprocessed,
+    quote_escape_strings = false
 )]
 pub struct SendBytesUnprocessed {
     pub retransmission_times: u8,
@@ -239,9 +239,9 @@ pub struct SendBytesUnprocessed {
 /// 4.4.3 Send bytes, processed.
 #[derive(Clone, Debug, AtatCmd)]
 #[at_cmd(
-"+SENDB",
-LoraSendBytesResponseUnprocessed,
-quote_escape_strings = false
+    "+SENDB",
+    LoraSendBytesResponseUnprocessed,
+    quote_escape_strings = false
 )]
 pub struct SendBytes {
     pub val: String<288>,
@@ -259,7 +259,7 @@ impl SendBytesUnprocessed {
                 quote_escape_strings: false,
             },
         )
-            .unwrap();
+        .unwrap();
         unsafe {
             for b in String::as_mut_vec(&mut val) {
                 if *b == b',' {
@@ -274,9 +274,14 @@ impl SendBytesUnprocessed {
 }
 
 impl SendBytes {
-    pub fn new(retransmission_times: u8, port: u8, data: [u8; 256]) -> Self {
+    pub fn new(retransmission_times: u8, port: u8, data: &[u8]) -> Self {
+        let mut val = [0u8; 256];
+        for (place, array) in val.iter_mut().zip(data.iter()) {
+            *place = *array;
+        }
+
         let data = HexStr {
-            val: data,
+            val,
             add_0x_with_encoding: false,
             hex_in_caps: true,
             delimiter_after_nibble_count: 0,
@@ -288,7 +293,7 @@ impl SendBytes {
             port,
             data,
         }
-            .processed()
+        .processed()
     }
 }
 
@@ -299,13 +304,13 @@ pub struct LoraReceiveBytes {}
 
 #[cfg(test)]
 mod tests {
-    use crate::lora::types::{LoraClass, LoraRegion};
     use crate::lora::commands::{
         AppEuiGet, AppEuiSet, AppKeyGet, AppKeySet, DevEuiGet, DevEuiSet, JoinModeGet, JoinModeSet,
         LoraAutoJoinGet, LoraAutoJoinSet, LoraClassGet, LoraJoinOtaa, LoraJoinOtaaStatus,
         LoraMaxTxLengthGet, LoraReceiveBytes, LoraRegionGet, SendBytes, SendBytesUnprocessed,
         UplinkConfirmGet, UplinkConfirmSet,
     };
+    use crate::lora::types::{LoraClass, LoraRegion};
     use atat::AtatCmd;
 
     #[test]
@@ -438,7 +443,7 @@ mod tests {
         v[1] = 0xCD;
         v[2] = 0xEF;
         v[3] = 0x01;
-        let k = SendBytes::new(3, 12, v).as_bytes();
+        let k = SendBytes::new(3, 12, &v).as_bytes();
         assert_eq!(k, b"AT+SENDB=3:12:ABCDEF01\r\n");
     }
 

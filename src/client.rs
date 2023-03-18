@@ -1,6 +1,6 @@
-use defmt::{debug, error};
 use crate::general::responses::Error;
 use atat::clock::Clock;
+use defmt::{debug, error};
 
 pub struct MokoMkl62BaClient<C, CLK, const TIMER_HZ: u32>
 where
@@ -57,6 +57,4 @@ where
     fn handle_urc(&mut self) -> Result<bool, Error> {
         Ok(true)
     }
-
-
 }
