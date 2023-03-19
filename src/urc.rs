@@ -16,14 +16,14 @@ pub enum URCMessages<const RX_SIZE: usize> {
 impl<const RX_SIZE: usize> AtatUrc for URCMessages<RX_SIZE> {
     type Response = Self;
 
-    fn parse(resp: &[u8]) -> Option<Self::Response> {
+    fn parse(_resp: &[u8]) -> Option<Self::Response> {
         // Command echo
         Some(Self::Unknown)
     }
 }
 
 impl<const RX_SIZE: usize> Parser for URCMessages<RX_SIZE> {
-    fn parse(buf: &[u8]) -> Result<(&[u8], usize), ParseError> {
+    fn parse(_buf: &[u8]) -> Result<(&[u8], usize), ParseError> {
         Err(ParseError::Incomplete)
     }
 }
