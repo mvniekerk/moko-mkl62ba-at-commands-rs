@@ -72,7 +72,7 @@ impl Into<AtatError> for ErrorResponse {
         match self.error.as_str() {
             "ERROR (-1)" => AtatError::Error,
             "ERROR (-2)" => AtatError::Parse,
-            "ERROR (-3)" => AtatError::Overflow,
+            "ERROR (-3)" => AtatError::Read,
             "ERROR (-5)" => AtatError::Error,
             "ERROR (-7)" => AtatError::Timeout,
             _ => AtatError::Error,
@@ -88,7 +88,7 @@ impl From<AtatError> for Error {
             AtatError::Timeout => Self::Timeout,
             AtatError::InvalidResponse => Self::AtCommandError,
             AtatError::Aborted => Self::AtCommandError,
-            AtatError::Overflow => Self::Busy,
+            AtatError::Read => Self::AtCommandError,
             AtatError::Parse => Self::AtParameterError,
             AtatError::Error => Self::AtParameterError,
             AtatError::CmeError(_) => Self::Unknown,

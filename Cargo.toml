@@ -3,7 +3,7 @@ name = "moko-mkl62ba-at-commands"
 version = "0.1.0"
 edition = "2021"
 authors = ["Michael van Niekerk <mike@agri-io.co.za>"]
-description = "AT commands client builder for the Shenzen Ai-Thinker Ra08h"
+description = "AT commands for the Moko MKL62BA"
 license = "MIT/Apache-2.0"
 
 readme = "README.md"
@@ -12,9 +12,13 @@ keywords = ["no_std", "moko", "MKL62BA"]
 categories = ["no-std", "embedded"]
 
 [dependencies]
-atat = { git = "https://github.com/mvniekerk/atat.git", commit = "7bb16dbebe0ec493fd6fa444f811182da98d9654" }
-atat_derive = { git = "https://github.com/mvniekerk/atat.git", commit = "7bb16dbebe0ec493fd6fa444f811182da98d9654" }
-serde_at = { git = "https://github.com/mvniekerk/atat.git", commit = "7bb16dbebe0ec493fd6fa444f811182da98d9654" }
+atat = { git = "https://github.com/mvniekerk/atat.git", commit = "8da248ba8e101f539909c5db8b2f4811ee9bf668", default-features=false, features = ["derive", "bytes", "hex_str_arrays"] }
+atat_derive = { git = "https://github.com/mvniekerk/atat.git", commit = "8da248ba8e101f539909c5db8b2f4811ee9bf668" }
+serde_at = { git = "https://github.com/mvniekerk/atat.git", commit = "8da248ba8e101f539909c5db8b2f4811ee9bf668" }
 nb = { version = "1" }
 heapless = "0.7"
 defmt = { version = "0.3" }
+
+[features]
+debug = ["atat/defmt"]
+default = ["debug"]

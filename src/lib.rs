@@ -1,7 +1,5 @@
 #![no_std]
 
-extern crate alloc;
-
 pub mod client;
 pub mod general;
 pub mod lora;

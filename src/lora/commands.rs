@@ -22,7 +22,7 @@ pub struct JoinModeGet {}
 
 /// 4.3.1 Set Lora Join Mode
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+JOIN_MODE", LoraJoinMode, quote_escape_strings = false)]
+#[at_cmd("+JOIN_MODE", LoraJoinMode, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct JoinModeSet {
     pub join_mode: String<8>,
 }
@@ -48,7 +48,7 @@ pub struct DevEuiGet {}
 
 /// 4.3.2 Set DevEui
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+DEVEUI", DevEuiGetVal, quote_escape_strings = false)]
+#[at_cmd("+DEVEUI", DevEuiGetVal, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct DevEuiSet {
     pub dev_eui: HexStr<u64>,
 }
@@ -75,7 +75,7 @@ pub struct AppEuiGet {}
 
 /// 4.3.3 Set AppEui
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+APPEUI", AppEuiGetVal, quote_escape_strings = false)]
+#[at_cmd("+APPEUI", AppEuiGetVal, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct AppEuiSet {
     pub app_eui: HexStr<u64>,
 }
@@ -102,7 +102,7 @@ pub struct AppKeyGet {}
 
 /// 4.3.4 Set AppKey
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+APPKEY", AppKeyGetVal, quote_escape_strings = false)]
+#[at_cmd("+APPKEY", AppKeyGetVal, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct AppKeySet {
     pub app_key: HexStr<u128>,
 }
@@ -129,7 +129,7 @@ pub struct LoraRegionGet {}
 
 /// 4.3.8 Region Set
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+REGION", LoraRegionGetVal, quote_escape_strings = false)]
+#[at_cmd("+REGION", LoraRegionGetVal, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct LoraRegionSet {
     pub region: String<10>,
 }
@@ -147,7 +147,7 @@ pub struct LoraClassGet {}
 
 /// 4.3.9 Class Set
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+CLASS", LoraClassGetVal, quote_escape_strings = false)]
+#[at_cmd("+CLASS", LoraClassGetVal, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct LoraClassSet {
     pub class: String<2>,
 }
@@ -160,22 +160,22 @@ impl LoraClassSet {
 
 /// 4.3.10 Join using OTAA
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+JOINING", LoraJoinResponse)]
+#[at_cmd("+JOINING", LoraJoinResponse, timeout_ms = 4000)]
 pub struct LoraJoinOtaa {}
 
 /// 4.3.11 Join status
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+JOIN_STD=?", LoraJoinResponse)]
+#[at_cmd("+JOIN_STD=?", LoraJoinResponse, timeout_ms = 4000)]
 pub struct LoraJoinOtaaStatus {}
 
 /// 4.3.12 Auto join get
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+AUTO_JOIN=?", OnOff)]
+#[at_cmd("+AUTO_JOIN=?", OnOff, timeout_ms = 4000)]
 pub struct LoraAutoJoinGet {}
 
 /// 4.3.12 Auto join set
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+AUTO_JOIN", OnOff, quote_escape_strings = false)]
+#[at_cmd("+AUTO_JOIN", OnOff, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct LoraAutoJoinSet {
     pub on: String<6>,
 }

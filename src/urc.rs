@@ -7,7 +7,7 @@ use atat::digest::ParseError;
 use atat::{AtatUrc, Parser};
 
 /// URC definitions, needs to passed as generic of [AtDigester](atat::digest::AtDigester): `AtDigester<URCMessages>`
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum URCMessages<const RX_SIZE: usize> {
     /// Unknown URC message
     Unknown,

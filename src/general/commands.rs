@@ -2,10 +2,11 @@ use atat_derive::AtatCmd;
 use heapless::String;
 
 use super::responses::{OkResponse, OnOff};
+use crate::NoResponse;
 
 /// 4.1.1 AT - Verify COM is working
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("AT", OkResponse, cmd_prefix = "")]
+#[at_cmd("AT", OkResponse, cmd_prefix = "", timeout_ms = 2000)]
 pub struct VerifyComIsWorking {}
 
 /// 4.1.3 Get ATE - Echo is on/off
@@ -15,7 +16,7 @@ pub struct AteGet {}
 
 /// 4.1.3 Set ATE - Echo is on/off
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+ATE", OnOff, quote_escape_strings = false)]
+#[at_cmd("+ATE", OnOff, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct AteSet {
     pub on: String<6>,
 }
@@ -40,7 +41,7 @@ pub struct SleepGet {}
 
 /// 4.1.5 Set Sleep status
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+SLEEP", OnOff, quote_escape_strings = false)]
+#[at_cmd("+SLEEP", OnOff, quote_escape_strings = false, timeout_ms = 4000)]
 pub struct SleepSet {
     pub on: String<6>,
 }
@@ -57,6 +58,11 @@ impl SleepSet {
         }
     }
 }
+
+///4.1.6 Reset
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+RESET", NoResponse, timeout_ms = 4000)]
+pub struct Reset {}
 
 #[cfg(test)]
 mod tests {
