@@ -2,7 +2,7 @@ use atat_derive::AtatCmd;
 use heapless::String;
 
 use super::responses::{OkResponse, OnOff};
-use crate::NoResponse;
+use crate::{NoResponse};
 
 /// 4.1.1 AT - Verify COM is working
 #[derive(Clone, Debug, AtatCmd)]
@@ -61,7 +61,7 @@ impl SleepSet {
 
 ///4.1.6 Reset
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+RESET", NoResponse, timeout_ms = 4000)]
+#[at_cmd("+RESET", OkResponse, timeout_ms = 8000)]
 pub struct Reset {}
 
 #[cfg(test)]

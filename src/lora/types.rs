@@ -1,3 +1,4 @@
+use core::str::FromStr;
 use crate::lora::commands::{LoraClassSet, LoraRegionSet};
 use heapless::String;
 
@@ -8,7 +9,7 @@ pub enum LoraJoinMode {
     _Unknown,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum LoraRegion {
     Eu868,
     In865,
@@ -19,17 +20,25 @@ pub enum LoraRegion {
     Unknown,
 }
 
-impl From<String<10>> for LoraRegion {
-    fn from(value: String<10>) -> Self {
-        match value.as_str() {
+impl FromStr for LoraRegion {
+    type Err = ();
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        let v = match value {
             "EU868" => Self::Eu868,
             "IN865" => Self::In865,
             "RU864" => Self::Ru864,
             "US915" => Self::Us915,
             "AU915" => Self::Au915,
             "AS923" => Self::As923,
-            _ => Self::Unknown,
-        }
+            _ => return Err(()),
+        };
+        Ok(v)
+    }
+}
+
+impl From<String<10>> for LoraRegion {
+    fn from(value: String<10>) -> Self {
+        Self::from_str(value.as_str()).unwrap_or(Self::Unknown)
     }
 }
 

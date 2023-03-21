@@ -190,7 +190,7 @@ impl LoraClassSet {
 
 /// 4.3.10 Join using OTAA
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+JOINING", LoraJoinResponse, timeout_ms = 4000)]
+#[at_cmd("+JOINING", LoraJoinResponse, timeout_ms = 10000)]
 pub struct LoraJoinOtaa {}
 
 /// 4.3.11 Join status
