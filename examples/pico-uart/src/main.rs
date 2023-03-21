@@ -20,12 +20,10 @@ use atat::AtatIngress;
 use atat::{asynch::Client, Buffers, Ingress};
 use embassy_time::{Duration, Timer};
 use embedded_alloc::Heap;
-use moko_mkl62ba_at_commands::client::asynch::MokoMkl62BaClient;
 use moko_mkl62ba_at_commands::digester::MokoDigester;
-use moko_mkl62ba_at_commands::lora::types::{
-    LoraClass, LoraJoinMode, LoraJoiningStatus, LoraRegion,
-};
+use moko_mkl62ba_at_commands::lora::types::{LoraJoinMode, LoraJoiningStatus, LoraRegion, LoraClass};
 use moko_mkl62ba_at_commands::urc::URCMessages;
+use moko_mkl62ba_at_commands::client::asynch::MokoMkl62BaClient;
 
 const APP_KEY: u128 = 0xd65b042878144e038a744359c7cd1f9d;
 const DEV_EUI: u64 = 0x68419fa0f7e74b0d;
@@ -39,8 +37,14 @@ const INGRESS_BUF_SIZE: usize = RX_SIZE;
 const URC_SUBSCRIBERS: usize = 0;
 const URC_CAPACITY: usize = RX_SIZE * 3;
 
-type AtIngress<'a> =
-    Ingress<'a, MokoDigester, URCMessages, INGRESS_BUF_SIZE, URC_CAPACITY, URC_SUBSCRIBERS>;
+type AtIngress<'a> = Ingress<
+    'a,
+    MokoDigester,
+    URCMessages,
+    INGRESS_BUF_SIZE,
+    URC_CAPACITY,
+    URC_SUBSCRIBERS,
+>;
 
 type AtMokoClient<'a> = Client<'a, BufferedUartTx<'a, UART1>, INGRESS_BUF_SIZE>;
 
@@ -76,8 +80,17 @@ async fn main(spawner: Spawner) {
         .tx_timeout(Duration::from_millis(2000));
 
     let digester = MokoDigester::default();
-    static BUFFERS: Buffers<URCMessages, INGRESS_BUF_SIZE, URC_CAPACITY, URC_SUBSCRIBERS> =
-        atat::Buffers::<URCMessages, INGRESS_BUF_SIZE, URC_CAPACITY, URC_SUBSCRIBERS>::new();
+    static BUFFERS: Buffers<
+        URCMessages,
+        INGRESS_BUF_SIZE,
+        URC_CAPACITY,
+        URC_SUBSCRIBERS,
+    > = atat::Buffers::<
+        URCMessages,
+        INGRESS_BUF_SIZE,
+        URC_CAPACITY,
+        URC_SUBSCRIBERS,
+    >::new();
     let (ingress, client) = BUFFERS.split(tx, digester, config);
 
     unwrap!(spawner.spawn(read_task(ingress, rx)));
@@ -115,7 +128,10 @@ async fn client_task(client: AtMokoClient<'static>) {
         info!("App EUI set");
     }
 
-    if let Err(e) = client.app_key_set(APP_KEY).await {
+    if let Err(e) = client
+        .app_key_set(APP_KEY)
+        .await
+    {
         error!("Error setting app key: {:?}", e);
     } else {
         info!("App key set");
