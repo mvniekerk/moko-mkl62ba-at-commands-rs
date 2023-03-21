@@ -132,6 +132,12 @@ pub struct LoraReceivedBytesDataResponse {
     pub data: HexStr<[u8; 256]>,
 }
 
+/// Data rate (DR) set response
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct DrSetResponse {
+    pub data_rate: u8
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum LoraReceivedBytes {
     None,

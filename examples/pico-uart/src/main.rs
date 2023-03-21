@@ -149,6 +149,24 @@ async fn client_task(client: AtMokoClient<'static>) {
         info!("Lora class set to Class C");
     }
 
+    if let Err(e) = client.adr_set(false).await {
+        error!("Error setting lora adr: {:?}", e);
+    } else {
+        info!("Lora adr set to false");
+    }
+
+    if let Err(e) = client.dr_set(5).await {
+        error!("Error setting lora dr: {:?}", e);
+    } else {
+        info!("Lora dr set to 5");
+    }
+
+    if let Err(e) = client.confirm_send_set(false).await {
+        error!("Error confirm set: {:?}", e);
+    } else {
+        info!("Lora send ACK set to false");
+    }
+
     if let Err(e) = client.auto_join_set(false).await {
         error!("Error setting auto join: {:?}", e);
     } else {
@@ -207,6 +225,6 @@ async fn client_task(client: AtMokoClient<'static>) {
             }
             Err(e) => error!("Error sending: {:?}", e),
         }
-        Timer::after(Duration::from_secs(10)).await;
+        Timer::after(Duration::from_secs(20)).await;
     }
 }

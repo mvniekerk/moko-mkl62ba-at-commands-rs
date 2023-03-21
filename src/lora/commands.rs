@@ -8,7 +8,7 @@ use super::responses::{
     AppEuiGet as AppEuiGetVal, AppKeyGet as AppKeyGetVal, DevEuiGet as DevEuiGetVal,
     LoraClassGet as LoraClassGetVal, LoraJoinMode, LoraJoinResponse, LoraMaxTxLength,
     LoraReceivedBytesResponseRaw, LoraRegionGet as LoraRegionGetVal,
-    LoraSendBytesResponseUnprocessed,
+    LoraSendBytesResponseUnprocessed, DrSetResponse
 };
 
 use super::types::{LoraClass, LoraRegion};
@@ -221,6 +221,33 @@ impl LoraAutoJoinSet {
             on: String::from("OFF"),
         }
     }
+}
+
+/// 4.3.15 ADR set
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+ADR", OnOff, quote_escape_strings = false, timeout_ms = 4000)]
+pub struct LoraAdrSet {
+    pub on: String<6>,
+}
+
+impl LoraAdrSet {
+    pub fn on() -> Self {
+        Self {
+            on: String::from("ON"),
+        }
+    }
+    pub fn off() -> Self {
+        Self {
+            on: String::from("OFF"),
+        }
+    }
+}
+
+/// 4.3.17 Data rate (DR) set. 0 - 15
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+DR", DrSetResponse, quote_escape_strings = false, timeout_ms = 4000)]
+pub struct LoraDrSet {
+    pub data_rate: u8,
 }
 
 /// 4.4.1 Maximum TX length get

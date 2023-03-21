@@ -151,5 +151,21 @@ pub mod asynch {
             let response = self.client.send(&command).await?;
             Ok(response.into())
         }
+
+        pub async fn adr_set(&mut self, on: bool) -> Result<bool, Error> {
+            let command = if on {
+                commands::LoraAdrSet::on()
+            } else {
+                commands::LoraAdrSet::off()
+            };
+            let response = self.client.send(&command).await?;
+            Ok(response.is_on())
+        }
+
+        pub async fn dr_set(&mut self, data_rate: u8) -> Result<u8, Error> {
+            let command = commands::LoraDrSet { data_rate };
+            let response = self.client.send(&command).await?;
+            Ok(response.data_rate)
+        }
     }
 }
