@@ -54,9 +54,9 @@ pub enum Error {
     Unknown,
 }
 
-impl Into<Error> for ErrorResponse {
-    fn into(self) -> Error {
-        match self.error.as_str() {
+impl From<ErrorResponse> for Error {
+    fn from(value: ErrorResponse) -> Self {
+        match value.error.as_str() {
             "ERROR (-1)" => Error::AtCommandError,
             "ERROR (-2)" => Error::AtParameterError,
             "ERROR (-3)" => Error::Busy,
@@ -67,9 +67,9 @@ impl Into<Error> for ErrorResponse {
     }
 }
 
-impl Into<AtatError> for ErrorResponse {
-    fn into(self) -> AtatError {
-        match self.error.as_str() {
+impl From<ErrorResponse> for AtatError {
+    fn from(value: ErrorResponse) -> Self {
+        match value.error.as_str() {
             "ERROR (-1)" => AtatError::Error,
             "ERROR (-2)" => AtatError::Parse,
             "ERROR (-3)" => AtatError::Read,
@@ -88,7 +88,7 @@ impl From<AtatError> for Error {
             AtatError::Timeout => Self::Timeout,
             AtatError::InvalidResponse => Self::AtCommandError,
             AtatError::Aborted => Self::AtCommandError,
-            AtatError::Read => Self::AtCommandError,
+            // AtatError::Read => Self::AtCommandError,
             AtatError::Parse => Self::AtParameterError,
             AtatError::Error => Self::AtParameterError,
             AtatError::CmeError(_) => Self::Unknown,

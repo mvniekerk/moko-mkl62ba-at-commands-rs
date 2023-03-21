@@ -1,5 +1,5 @@
-use core::str::FromStr;
 use crate::lora::commands::{LoraClassSet, LoraRegionSet};
+use core::str::FromStr;
 use heapless::String;
 
 #[derive(Debug, Clone, PartialEq)]

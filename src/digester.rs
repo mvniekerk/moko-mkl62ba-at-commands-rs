@@ -1,9 +1,19 @@
-use atat::{nom, nom::{branch, bytes, character, combinator, sequence}, DigestResult, Digester, Parser};
-use atat::{InternalError, digest::{parser, ParseError}};
 use atat::helpers::LossyStr;
-use defmt::{debug, info};
-use crate::urc::URCMessages;
+use atat::{
+    digest::{parser, ParseError},
+    InternalError,
+};
+use atat::{
+    nom,
+    nom::{branch, bytes, character, combinator, sequence},
+    DigestResult, Digester, Parser,
+};
 
+use crate::urc::URCMessages;
+#[cfg(feature = "debug")]
+use defmt::{debug, info};
+
+#[derive(Default)]
 pub struct MokoDigester {}
 
 impl MokoDigester {
@@ -35,12 +45,14 @@ impl MokoDigester {
                 bytes::streaming::tag(b"\r\n"),
             )),
         ))(buf)?;
+        #[cfg(feature = "debug")]
         debug!("Custom error {:?}", LossyStr(data));
         Ok((data, head.len() + data.len() + tail.len()))
     }
 
     pub fn custom_success(buf: &[u8]) -> Result<(&[u8], usize), ParseError> {
-        info!("Custom success start {:?}", LossyStr(buf));
+        #[cfg(feature = "debug")]
+        debug!("Custom success start {:?}", LossyStr(buf));
         let (_reminder, (head, data, tail)) = branch::alt((
             // AT command
             sequence::tuple((
@@ -71,7 +83,7 @@ impl MokoDigester {
                     bytes::streaming::tag("\r\n"),
                     bytes::streaming::take_until("\r\n"),
                     bytes::streaming::tag("\r\n"),
-                )))
+                ))),
             )),
             // Join status
             sequence::tuple((
@@ -82,22 +94,16 @@ impl MokoDigester {
                 ))),
                 bytes::streaming::tag("\r\n"),
             )),
-
         ))(buf)?;
         info!("Custom success ! [{:?}]", LossyStr(data));
         Ok((data, head.len() + data.len() + tail.len()))
     }
 }
 
-impl Default for MokoDigester {
-    fn default() -> Self {
-        Self {}
-    }
-}
-
 impl Digester for MokoDigester {
     fn digest<'a>(&mut self, input: &'a [u8]) -> (DigestResult<'a>, usize) {
         let s = LossyStr(input);
+        #[cfg(feature = "debug")]
         info!("Digesting: {:?}", s);
 
         // Incomplete. Eat the echo and do nothing else.

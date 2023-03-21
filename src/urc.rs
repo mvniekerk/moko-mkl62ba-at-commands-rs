@@ -3,12 +3,16 @@
 //! This is just used internally, but needs to be public for passing [URCMessages] as a generic to
 //! [AtDigester](atat::digest::AtDigester): `AtDigester<URCMessages>`.
 
-use atat::helpers::LossyStr;
-use defmt::{error, info};
-use atat::{nom::{branch, bytes, character, combinator, sequence}, Parser, AtatUrc};
-use atat::digest::ParseError;
 use crate::lora::types::LoraRegion;
 use crate::urc::URCMessages::SystemStart;
+use atat::digest::ParseError;
+use atat::helpers::LossyStr;
+use atat::{
+    nom::{branch, bytes, character, combinator, sequence},
+    AtatUrc, Parser,
+};
+#[cfg(feature = "debug")]
+use defmt::error;
 
 /// URC definitions, needs to passed as generic of [AtDigester](atat::digest::AtDigester): `AtDigester<URCMessages>`
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -20,7 +24,7 @@ pub enum URCMessages {
     SystemStart,
     SoftwareVersion(u8, u8, u8),
     LoraVersion(u32),
-    LoraRegion(LoraRegion)
+    LoraRegion(LoraRegion),
 }
 
 impl URCMessages {
@@ -34,16 +38,33 @@ impl URCMessages {
             bytes::streaming::take_while(character::is_digit),
         ))(buf)?;
 
-        match (core::str::from_utf8(major), core::str::from_utf8(minor),core::str::from_utf8(patch)) {
-            (Ok(major), Ok(minor), Ok(patch)) => match (major.parse::<u8>(), minor.parse::<u8>(), patch.parse::<u8>()) {
-                (Ok(major), Ok(minor), Ok(patch)) => Ok(URCMessages::SoftwareVersion(major, minor, patch)),
+        match (
+            core::str::from_utf8(major),
+            core::str::from_utf8(minor),
+            core::str::from_utf8(patch),
+        ) {
+            (Ok(major), Ok(minor), Ok(patch)) => match (
+                major.parse::<u8>(),
+                minor.parse::<u8>(),
+                patch.parse::<u8>(),
+            ) {
+                (Ok(major), Ok(minor), Ok(patch)) => {
+                    Ok(URCMessages::SoftwareVersion(major, minor, patch))
+                }
                 _ => {
+                    #[cfg(feature = "debug")]
                     error!("Failed to parse u8 values for software version");
                     Err(ParseError::NoMatch)
                 }
             },
             _ => {
-                error!("Failed to parse software version strings [{:?}, {:?}, {:?}]", LossyStr(major), LossyStr(minor), LossyStr(patch));
+                #[cfg(feature = "debug")]
+                error!(
+                    "Failed to parse software version strings [{:?}, {:?}, {:?}]",
+                    LossyStr(major),
+                    LossyStr(minor),
+                    LossyStr(patch)
+                );
                 Err(ParseError::NoMatch)
             }
         }
@@ -55,13 +76,21 @@ impl URCMessages {
             bytes::streaming::take_while(character::is_digit),
         ))(buf)?;
         let version = core::str::from_utf8(version)
-            .map_err(|e| {
-                error!("Failed to parse lora version string [{:?}]", LossyStr(version));
+            .map_err(|_e| {
+                #[cfg(feature = "debug")]
+                error!(
+                    "Failed to parse lora version string [{:?}]",
+                    LossyStr(version)
+                );
                 ParseError::NoMatch
             })?
             .parse::<u32>()
-            .map_err(|e| {
-                error!("Failed to parse lora version integer {:?}", LossyStr(version));
+            .map_err(|_e| {
+                #[cfg(feature = "debug")]
+                error!(
+                    "Failed to parse lora version integer {:?}",
+                    LossyStr(version)
+                );
                 ParseError::NoMatch
             })?;
         Ok(URCMessages::LoraVersion(version))
@@ -74,11 +103,13 @@ impl URCMessages {
         ))(buf)?;
         let region = core::str::from_utf8(region)
             .map_err(|_e| {
+                #[cfg(feature = "debug")]
                 error!("Failed to parse lora region string, {:?}", LossyStr(region));
                 ParseError::NoMatch
             })?
             .parse::<LoraRegion>()
             .map_err(|_| {
+                #[cfg(feature = "debug")]
                 error!("Failed to parse lora region from string");
                 ParseError::NoMatch
             })?;
@@ -90,22 +121,18 @@ impl AtatUrc for URCMessages {
     type Response = Self;
 
     fn parse(resp: &[u8]) -> Option<Self::Response> {
-        let l = LossyStr(resp);
-        // info!("URC: {:?}", l);
-
         match resp {
             b"SYSTEM START" => Some(SystemStart),
             b if b.starts_with(b"SOFT VERSION:") => URCMessages::parse_software_version(resp).ok(),
             b if b.starts_with(b"LORA VERSION:") => URCMessages::parse_lora_version(resp).ok(),
             b if b.starts_with(b"LORA REGION:") => URCMessages::parse_lora_region(resp).ok(),
-            _ => None
+            _ => None,
         }
     }
 }
 
 impl Parser for URCMessages {
     fn parse(buf: &[u8]) -> Result<(&[u8], usize), ParseError> {
-        // info!("Parser URC: {:?}", LossyStr(buf));
         let (_reminder, (head, data, tail)) = branch::alt((
             // System start
             sequence::tuple((
@@ -124,7 +151,7 @@ impl Parser for URCMessages {
                     bytes::streaming::tag("."),
                     bytes::streaming::take_while(character::is_digit),
                 ))),
-                bytes::streaming::tag("==============\r\n\r\n")
+                bytes::streaming::tag("==============\r\n\r\n"),
             )),
             // Lora version
             sequence::tuple((
@@ -133,7 +160,7 @@ impl Parser for URCMessages {
                     bytes::streaming::tag("LORA VERSION:"),
                     bytes::streaming::take_while(character::is_digit),
                 ))),
-                bytes::streaming::tag("===============\r\n\r\n")
+                bytes::streaming::tag("===============\r\n\r\n"),
             )),
             // Lora region
             sequence::tuple((
@@ -142,11 +169,9 @@ impl Parser for URCMessages {
                     bytes::streaming::tag("LORA REGION:"),
                     bytes::streaming::take_while(character::is_alphanumeric),
                 ))),
-                bytes::streaming::tag("==================\r\n")
+                bytes::streaming::tag("==================\r\n"),
             )),
-
         ))(buf)?;
-        // info!("URC found: {:?}", LossyStr(data));
         Ok((data, head.len() + data.len() + tail.len()))
     }
 }

@@ -2,7 +2,6 @@ use atat_derive::AtatCmd;
 use heapless::String;
 
 use super::responses::{OkResponse, OnOff};
-use crate::{NoResponse};
 
 /// 4.1.1 AT - Verify COM is working
 #[derive(Clone, Debug, AtatCmd)]
