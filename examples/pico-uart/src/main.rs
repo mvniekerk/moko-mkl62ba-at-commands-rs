@@ -18,12 +18,14 @@ use {defmt_rtt as _, panic_probe as _};
 
 use atat::AtatIngress;
 use atat::{asynch::Client, Buffers, Ingress};
+use atat::helpers::LossyStr;
 use embassy_time::{Duration, Timer};
 use embedded_alloc::Heap;
 use moko_mkl62ba_at_commands::digester::MokoDigester;
 use moko_mkl62ba_at_commands::lora::types::{LoraJoinMode, LoraJoiningStatus, LoraRegion, LoraClass};
 use moko_mkl62ba_at_commands::urc::URCMessages;
 use moko_mkl62ba_at_commands::client::asynch::MokoMkl62BaClient;
+use moko_mkl62ba_at_commands::lora::responses::LoraReceivedBytes;
 
 const APP_KEY: u128 = 0xd65b042878144e038a744359c7cd1f9d;
 const DEV_EUI: u64 = 0x68419fa0f7e74b0d;
@@ -106,24 +108,24 @@ async fn read_task(mut ingress: AtIngress<'static>, mut rx: BufferedUartRx<'stat
 async fn client_task(client: AtMokoClient<'static>) {
     let client = MokoMkl62BaClient::new(client).await;
     if let Err(e) = client {
-        error!("Error creating client: {:?}", e);
+        error!("Error creating client");
         return;
     }
     let mut client = client.unwrap();
     if let Err(e) = client.join_mode_set(LoraJoinMode::Otaa).await {
-        error!("Error setting join mode: {:?}", e);
+        error!("Error setting join mode");
     } else {
         info!("Join mode set to OTAA");
     }
 
     if let Err(e) = client.dev_eui_set(DEV_EUI).await {
-        error!("Error setting dev eui: {:?}", e);
+        error!("Error setting dev eui");
     } else {
         info!("Dev EUI set");
     }
 
     if let Err(e) = client.app_eui_set(0x0).await {
-        error!("Error setting app eui: {:?}", e);
+        error!("Error setting app eui");
     } else {
         info!("App EUI set");
     }
@@ -132,49 +134,49 @@ async fn client_task(client: AtMokoClient<'static>) {
         .app_key_set(APP_KEY)
         .await
     {
-        error!("Error setting app key: {:?}", e);
+        error!("Error setting app key");
     } else {
         info!("App key set");
     }
 
     if let Err(e) = client.lora_region_set(LoraRegion::Eu868).await {
-        error!("Error setting lora region: {:?}", e);
+        error!("Error setting lora region");
     } else {
         info!("Lora region set");
     }
 
     if let Err(e) = client.lora_class_set(LoraClass::ClassC).await {
-        error!("Error setting lora class: {:?}", e);
+        error!("Error setting lora class");
     } else {
         info!("Lora class set to Class C");
     }
 
     if let Err(e) = client.adr_set(false).await {
-        error!("Error setting lora adr: {:?}", e);
+        error!("Error setting lora adr");
     } else {
         info!("Lora adr set to false");
     }
 
     if let Err(e) = client.dr_set(5).await {
-        error!("Error setting lora dr: {:?}", e);
+        error!("Error setting lora dr");
     } else {
         info!("Lora dr set to 5");
     }
 
     if let Err(e) = client.confirm_send_set(false).await {
-        error!("Error confirm set: {:?}", e);
+        error!("Error confirm set");
     } else {
         info!("Lora send ACK set to false");
     }
 
     if let Err(e) = client.auto_join_set(false).await {
-        error!("Error setting auto join: {:?}", e);
+        error!("Error setting auto join");
     } else {
         info!("Auto join disabled");
     }
 
     if let Err(e) = client.lora_join_otaa().await {
-        error!("Error joining: {:?}", e);
+        error!("Error joining");
     } else {
         info!("Started joining OTAA");
     }
@@ -207,7 +209,7 @@ async fn client_task(client: AtMokoClient<'static>) {
             },
 
             Err(e) => {
-                error!("Error getting join status: {:?}", e);
+                error!("Error getting join status");
             }
         }
         Timer::after(Duration::from_secs(1)).await;
@@ -217,14 +219,51 @@ async fn client_task(client: AtMokoClient<'static>) {
         error!("Failed to join");
         return;
     }
-
+    let mut uplink_frame_count = 0;
+    let mut downlink_frame_count = 0;
     loop {
+        let uplink_frame_count_get = client.uplink_frame_count().await;
+        if let Ok(uplink_frame_count_get) = uplink_frame_count_get {
+            if uplink_frame_count_get != uplink_frame_count {
+                info!("Uplink frame count: {:?}", uplink_frame_count_get);
+                uplink_frame_count = uplink_frame_count_get;
+            }
+        }
         match client.send(3, 12, b"Hello from Moko").await {
             Ok(_d) => {
                 info!("Sent bytes");
             }
-            Err(e) => error!("Error sending: {:?}", e),
+            Err(e) => error!("Error sending"),
         }
-        Timer::after(Duration::from_secs(20)).await;
+        for _i in 0..4 {
+            let downlink_frame_count_get = client.downlink_frame_count().await;
+            if let Ok(downlink_frame_count_get) = downlink_frame_count_get {
+                if downlink_frame_count_get != downlink_frame_count {
+                    info!("Downlink frame count changed: {:?}", downlink_frame_count_get);
+                    downlink_frame_count = downlink_frame_count_get;
+                    let recv = client.receive().await;
+                    match recv {
+                        Ok(recv) => {
+                            match recv {
+                                LoraReceivedBytes::None => {
+                                    info!("No bytes received");
+                                },
+                                LoraReceivedBytes::Data(data) => {
+                                    info!("Received {:?} bytes, {:?} RSSI, {:?} SNR, {:?} PORT", data.length, data.rssi, data.snr, data.port);
+                                    let bytes = *data.data;
+                                    let l = core::str::from_utf8(&bytes[0..(data.length as usize)]).unwrap();
+                                    info!("Bytes as string: {:?}", l);
+                                }
+                                LoraReceivedBytes::Ack(ack) => {
+                                    info!("Received ACK, {:?} RSSI, {:?} SNR", ack.rssi, ack.snr);
+                                }
+                            }
+                        }
+                        Err(e) => error!("Error receiving"),
+                    }
+                }
+            }
+            Timer::after(Duration::from_secs(5)).await;
+        }
     }
 }

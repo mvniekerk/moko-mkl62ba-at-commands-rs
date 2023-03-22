@@ -6,6 +6,7 @@
 use crate::lora::types::LoraRegion;
 use crate::urc::URCMessages::SystemStart;
 use atat::digest::ParseError;
+#[cfg(feature = "debug")]
 use atat::helpers::LossyStr;
 use atat::{
     nom::{branch, bytes, character, combinator, sequence},
@@ -25,6 +26,7 @@ pub enum URCMessages {
     SoftwareVersion(u8, u8, u8),
     LoraVersion(u32),
     LoraRegion(LoraRegion),
+    NextTxInSeconds(u16)
 }
 
 impl URCMessages {
@@ -115,6 +117,26 @@ impl URCMessages {
             })?;
         Ok(URCMessages::LoraRegion(region))
     }
+
+    pub(crate) fn parse_next_tx(buf: &[u8]) -> Result<URCMessages, ParseError> {
+        let (_, (_, seconds)) = sequence::tuple((
+            bytes::streaming::tag(b"NEXT TX after(s):"),
+            bytes::streaming::take_while(character::is_digit),
+        ))(buf)?;
+        let seconds = core::str::from_utf8(seconds)
+            .map_err(|_e| {
+                #[cfg(feature = "debug")]
+                error!("Failed to parse next tx seconds, {:?}", LossyStr(seconds));
+                ParseError::NoMatch
+            })?
+            .parse::<u16>()
+            .map_err(|_| {
+                #[cfg(feature = "debug")]
+                error!("Failed to parse next tx seconds from string");
+                ParseError::NoMatch
+            })?;
+        Ok(URCMessages::NextTxInSeconds(seconds))
+    }
 }
 
 impl AtatUrc for URCMessages {
@@ -126,6 +148,7 @@ impl AtatUrc for URCMessages {
             b if b.starts_with(b"SOFT VERSION:") => URCMessages::parse_software_version(resp).ok(),
             b if b.starts_with(b"LORA VERSION:") => URCMessages::parse_lora_version(resp).ok(),
             b if b.starts_with(b"LORA REGION:") => URCMessages::parse_lora_region(resp).ok(),
+            b if b.starts_with(b"NEXT TX after(s):") => URCMessages::parse_next_tx(resp).ok(),
             _ => None,
         }
     }
@@ -171,6 +194,15 @@ impl Parser for URCMessages {
                 ))),
                 bytes::streaming::tag("==================\r\n"),
             )),
+            // Next TX
+            sequence::tuple((
+                combinator::success(&b""[..]),
+                combinator::recognize(sequence::tuple((
+                    bytes::streaming::tag("NEXT TX after(s):"),
+                    bytes::streaming::take_while(character::is_digit),
+                ))),
+                bytes::streaming::tag("\r\n"),
+            ))
         ))(buf)?;
         Ok((data, head.len() + data.len() + tail.len()))
     }

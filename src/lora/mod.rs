@@ -13,6 +13,7 @@ pub mod asynch {
     use atat::asynch::AtatClient;
     use atat::Error;
     use embedded_io::asynch::Write;
+    use crate::lora::responses::LoraReceivedBytes;
 
     impl<'a, W: Write, const INGRESS_BUF_SIZE: usize> MokoMkl62BaClient<'a, W, INGRESS_BUF_SIZE> {
         pub async fn join_mode(&mut self) -> Result<LoraJoinMode, Error> {
@@ -152,6 +153,12 @@ pub mod asynch {
             Ok(response.into())
         }
 
+        pub async fn receive(&mut self) -> Result<LoraReceivedBytes, Error> {
+            let command = commands::LoraReceiveBytes {};
+            let response = self.client.send(&command).await?;
+            Ok(response.into())
+        }
+
         pub async fn adr_set(&mut self, on: bool) -> Result<bool, Error> {
             let command = if on {
                 commands::LoraAdrSet::on()
@@ -166,6 +173,18 @@ pub mod asynch {
             let command = commands::LoraDrSet { data_rate };
             let response = self.client.send(&command).await?;
             Ok(response.data_rate)
+        }
+
+        pub async fn uplink_frame_count(&mut self) -> Result<u32, Error> {
+            let command = commands::UplinkFrameCountGet {};
+            let response = self.client.send(&command).await?;
+            Ok(response.uplink_frame_count)
+        }
+
+        pub async fn downlink_frame_count(&mut self) -> Result<u32, Error> {
+            let command = commands::DownlinkFrameCountGet {};
+            let response = self.client.send(&command).await?;
+            Ok(response.downlink_frame_count)
         }
     }
 }

@@ -1,3 +1,4 @@
+#[cfg(feature = "debug")]
 use atat::helpers::LossyStr;
 use atat::{
     digest::{parser, ParseError},
@@ -12,6 +13,8 @@ use atat::{
 use crate::urc::URCMessages;
 #[cfg(feature = "debug")]
 use defmt::{debug, info};
+#[cfg(feature = "debug")]
+use heapless::String;
 
 #[derive(Default)]
 pub struct MokoDigester {}
@@ -94,7 +97,37 @@ impl MokoDigester {
                 ))),
                 bytes::streaming::tag("\r\n"),
             )),
+            // Receive bytes
+            sequence::tuple((
+                bytes::streaming::tag(b"+RECVB: "),
+                // combinator::success(&b""[..]),
+                combinator::recognize(sequence::tuple((
+                    // bytes::streaming::tag(b"+RECVB: "),
+                    bytes::streaming::take_until("\r\n"),
+                    bytes::streaming::tag("\r\n"),
+                ))),
+                combinator::success(&b""[..]),
+            )),
+            // Uplink frame count
+            sequence::tuple((
+                combinator::success(&b""[..]),
+                combinator::recognize(sequence::tuple((
+                    bytes::streaming::tag(b"+UP_CNT: "),
+                    bytes::streaming::take_until("\r\n"),
+                ))),
+                bytes::streaming::tag("\r\n"),
+            )),
+            // Downlink frame count
+            sequence::tuple((
+                combinator::success(&b""[..]),
+                combinator::recognize(sequence::tuple((
+                    bytes::streaming::tag(b"+DOWN_CNT: "),
+                    bytes::streaming::take_until("\r\n"),
+                ))),
+                bytes::streaming::tag("\r\n"),
+            )),
         ))(buf)?;
+        #[cfg(feature = "debug")]
         info!("Custom success ! [{:?}]", LossyStr(data));
         Ok((data, head.len() + data.len() + tail.len()))
     }
@@ -102,6 +135,7 @@ impl MokoDigester {
 
 impl Digester for MokoDigester {
     fn digest<'a>(&mut self, input: &'a [u8]) -> (DigestResult<'a>, usize) {
+        #[cfg(feature = "debug")]
         let s = LossyStr(input);
         #[cfg(feature = "debug")]
         info!("Digesting: {:?}", s);

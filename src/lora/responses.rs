@@ -3,7 +3,7 @@ use crate::lora::types::LoraJoiningStatus;
 use atat::serde_at::HexStr;
 use atat_derive::AtatResp;
 use heapless::String;
-
+use heapless_bytes::Bytes;
 /// Lora Join Mode
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct LoraJoinMode {
@@ -83,7 +83,7 @@ pub struct LoraMaxTxLength {
 /// Send bytes response, unprocessed. Needs to change : to , in order for AtAt to work
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct LoraSendBytesResponseUnprocessed {
-    pub val: String<1044>,
+    pub val: Bytes<1044>,
 }
 
 /// Parsed send bytes response
@@ -97,21 +97,20 @@ pub struct LoraSendBytesResponse {
 impl From<LoraSendBytesResponseUnprocessed> for LoraSendBytesResponse {
     fn from(value: LoraSendBytesResponseUnprocessed) -> Self {
         let mut val = value.val;
-        unsafe {
-            for b in String::as_mut_vec(&mut val) {
-                if *b == b':' {
-                    *b = b',';
-                }
+        for b in val.iter_mut() {
+            if *b == b':' {
+                *b = b',';
             }
         }
-        serde_at::from_str(val.as_str()).unwrap()
+        let val = core::str::from_utf8(val.as_slice()).unwrap();
+        serde_at::from_str(val).unwrap()
     }
 }
 
 /// Received bytes response, raw.
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct LoraReceivedBytesResponseRaw {
-    pub value: String<1060>,
+    pub value: Bytes<1060>,
 }
 
 /// Parsed send bytes response
@@ -151,17 +150,16 @@ impl From<LoraReceivedBytesResponseRaw> for LoraReceivedBytes {
             Self::None
         } else {
             let mut val = value.value;
-            unsafe {
-                for b in String::as_mut_vec(&mut val) {
-                    if *b == b':' {
-                        *b = b',';
-                    }
+            for b in val.iter_mut() {
+                if *b == b':' {
+                    *b = b',';
                 }
             }
+            let val = core::str::from_utf8(val.as_slice()).unwrap();
             if val.ends_with(",ACK") {
-                Self::Ack(serde_at::from_str(val.as_str()).unwrap())
+                Self::Ack(serde_at::from_str(val).unwrap())
             } else {
-                Self::Data(serde_at::from_str(val.as_str()).unwrap())
+                Self::Data(serde_at::from_str(val).unwrap())
             }
         }
     }
@@ -171,6 +169,18 @@ impl LoraReceivedBytesResponseRaw {
     pub fn processed(self) -> LoraReceivedBytes {
         self.into()
     }
+}
+
+/// Uplink frame count response
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct UplinkFrameCountResponse {
+    pub uplink_frame_count: u32
+}
+
+/// Downlink frame count response
+#[derive(Debug, Clone, AtatResp, PartialEq)]
+pub struct DownlinkFrameCountResponse {
+    pub downlink_frame_count: u32
 }
 
 #[cfg(test)]
@@ -184,6 +194,7 @@ mod tests {
     use core::str::FromStr;
     use heapless::String;
     use serde_at::HexStr;
+    use heapless_bytes::Bytes;
 
     #[test]
     fn lora_region() {
@@ -203,8 +214,9 @@ mod tests {
 
     #[test]
     fn lora_send_bytes_response() {
+
         let r = LoraSendBytesResponseUnprocessed {
-            val: "3:12:ABCDEF".into(),
+            val: Bytes::from_slice(b"3:12:ABCDEF").unwrap(),
         };
         let r: LoraSendBytesResponse = r.into();
         assert_eq!(r.retransmission_times, 3);
@@ -218,11 +230,11 @@ mod tests {
 
     #[test]
     fn received_bytes() {
-        let value = String::from_str("").unwrap();
+        let value = Bytes::from_slice(b"").unwrap();
         let k = LoraReceivedBytesResponseRaw { value }.processed();
         assert_eq!(k, LoraReceivedBytes::None);
 
-        let value = String::from_str("-104:1:ACK").unwrap();
+        let value = Bytes::from_slice(b"-104:1:ACK").unwrap();
         let k = LoraReceivedBytesResponseRaw { value }.processed();
         assert_eq!(
             k,
@@ -233,7 +245,7 @@ mod tests {
             })
         );
 
-        let value = String::from_str("-102:-4.0:8:8:3132333435363738").unwrap();
+        let value = Bytes::from_slice(b"-102:-4.0:8:8:3132333435363738").unwrap();
         let k = LoraReceivedBytesResponseRaw { value }.processed();
         let mut data = [0; 256];
         data[0] = 0x31;

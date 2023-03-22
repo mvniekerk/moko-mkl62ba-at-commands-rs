@@ -8,7 +8,7 @@ use super::responses::{
     AppEuiGet as AppEuiGetVal, AppKeyGet as AppKeyGetVal, DevEuiGet as DevEuiGetVal,
     LoraClassGet as LoraClassGetVal, LoraJoinMode, LoraJoinResponse, LoraMaxTxLength,
     LoraReceivedBytesResponseRaw, LoraRegionGet as LoraRegionGetVal,
-    LoraSendBytesResponseUnprocessed, DrSetResponse
+    LoraSendBytesResponseUnprocessed, DrSetResponse, UplinkFrameCountResponse, DownlinkFrameCountResponse
 };
 
 use super::types::{LoraClass, LoraRegion};
@@ -358,6 +358,16 @@ impl SendBytes {
 #[derive(Clone, Debug, AtatCmd)]
 #[at_cmd("+RECVB=?", LoraReceivedBytesResponseRaw, quote_escape_strings = false)]
 pub struct LoraReceiveBytes {}
+
+/// 4.4.6 Uplink frame count
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+UP_CNT=?", UplinkFrameCountResponse)]
+pub struct UplinkFrameCountGet {}
+
+/// 4.4.7 Downlink frame count
+#[derive(Clone, Debug, AtatCmd)]
+#[at_cmd("+DOWN_CNT=?", DownlinkFrameCountResponse)]
+pub struct DownlinkFrameCountGet {}
 
 #[cfg(test)]
 mod tests {

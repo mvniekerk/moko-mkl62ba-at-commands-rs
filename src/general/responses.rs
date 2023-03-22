@@ -1,6 +1,7 @@
 use atat::serde_at::HexStr;
 use atat::Error as AtatError;
 use atat_derive::AtatResp;
+#[cfg(feature = "debug")]
 use defmt::Format;
 use heapless::String;
 
@@ -98,7 +99,7 @@ impl From<AtatError> for Error {
         }
     }
 }
-
+#[cfg(feature = "debug")]
 impl Format for Error {
     fn format(&self, f: defmt::Formatter) {
         match self {
