@@ -5,7 +5,7 @@ use super::responses::{OkResponse, OnOff};
 
 /// 4.1.1 AT - Verify COM is working
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("AT", OkResponse, cmd_prefix = "", timeout_ms = 2000)]
+#[at_cmd("AT", OkResponse, cmd_prefix = "", timeout_ms = 5000)]
 pub struct VerifyComIsWorking {}
 
 /// 4.1.3 Get ATE - Echo is on/off
@@ -15,7 +15,7 @@ pub struct AteGet {}
 
 /// 4.1.3 Set ATE - Echo is on/off
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+ATE", OnOff, quote_escape_strings = false, timeout_ms = 4000)]
+#[at_cmd("+ATE", OnOff, quote_escape_strings = false, timeout_ms = 8000)]
 pub struct AteSet {
     pub on: String<6>,
 }
@@ -40,7 +40,7 @@ pub struct SleepGet {}
 
 /// 4.1.5 Set Sleep status
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+SLEEP", OnOff, quote_escape_strings = false, timeout_ms = 4000)]
+#[at_cmd("+SLEEP", OnOff, quote_escape_strings = false, timeout_ms = 8000)]
 pub struct SleepSet {
     pub on: String<6>,
 }
@@ -60,7 +60,7 @@ impl SleepSet {
 
 ///4.1.6 Reset
 #[derive(Clone, Debug, AtatCmd)]
-#[at_cmd("+RESET", OkResponse, timeout_ms = 8000)]
+#[at_cmd("+RESET", OkResponse, timeout_ms = 2000)]
 pub struct Reset {}
 
 #[cfg(test)]

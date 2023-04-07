@@ -13,8 +13,8 @@ pub mod asynch {
             client: Client<'a, W, INGRESS_BUF_SIZE>,
         ) -> Result<MokoMkl62BaClient<'a, W, INGRESS_BUF_SIZE>, Error> {
             let mut s = Self { client };
-            s.reset().await?;
-            s.at_echo_set(false).await?;
+            s.reset().await;
+            s.at_echo_set(false).await;
             Ok(s)
         }
     }
