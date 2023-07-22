@@ -5,6 +5,7 @@ pub mod types;
 #[cfg(feature = "async")]
 pub mod asynch {
     use crate::client::asynch::MokoMkl62BaClient;
+    use crate::lora::responses::LoraReceivedBytes;
     use crate::lora::{
         commands,
         responses::LoraSendBytesResponse,
@@ -13,7 +14,6 @@ pub mod asynch {
     use atat::asynch::AtatClient;
     use atat::Error;
     use embedded_io::asynch::Write;
-    use crate::lora::responses::LoraReceivedBytes;
 
     impl<'a, W: Write, const INGRESS_BUF_SIZE: usize> MokoMkl62BaClient<'a, W, INGRESS_BUF_SIZE> {
         pub async fn join_mode(&mut self) -> Result<LoraJoinMode, Error> {

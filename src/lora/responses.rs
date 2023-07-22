@@ -134,7 +134,7 @@ pub struct LoraReceivedBytesDataResponse {
 /// Data rate (DR) set response
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct DrSetResponse {
-    pub data_rate: u8
+    pub data_rate: u8,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -174,13 +174,13 @@ impl LoraReceivedBytesResponseRaw {
 /// Uplink frame count response
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct UplinkFrameCountResponse {
-    pub uplink_frame_count: u32
+    pub uplink_frame_count: u32,
 }
 
 /// Downlink frame count response
 #[derive(Debug, Clone, AtatResp, PartialEq)]
 pub struct DownlinkFrameCountResponse {
-    pub downlink_frame_count: u32
+    pub downlink_frame_count: u32,
 }
 
 #[cfg(test)]
@@ -193,8 +193,8 @@ mod tests {
     use crate::lora::types::{LoraClass, LoraRegion as LoraRegionVal};
     use core::str::FromStr;
     use heapless::String;
-    use serde_at::HexStr;
     use heapless_bytes::Bytes;
+    use serde_at::HexStr;
 
     #[test]
     fn lora_region() {
@@ -214,7 +214,6 @@ mod tests {
 
     #[test]
     fn lora_send_bytes_response() {
-
         let r = LoraSendBytesResponseUnprocessed {
             val: Bytes::from_slice(b"3:12:ABCDEF").unwrap(),
         };

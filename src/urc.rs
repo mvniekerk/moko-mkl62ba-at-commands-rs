@@ -26,7 +26,7 @@ pub enum URCMessages {
     SoftwareVersion(u8, u8, u8),
     LoraVersion(u32),
     LoraRegion(LoraRegion),
-    NextTxInSeconds(u16)
+    NextTxInSeconds(u16),
 }
 
 impl URCMessages {
@@ -202,7 +202,7 @@ impl Parser for URCMessages {
                     bytes::streaming::take_while(character::is_digit),
                 ))),
                 bytes::streaming::tag("\r\n"),
-            ))
+            )),
         ))(buf)?;
         Ok((data, head.len() + data.len() + tail.len()))
     }

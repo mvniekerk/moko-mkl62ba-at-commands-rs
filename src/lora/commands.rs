@@ -6,9 +6,9 @@ use serde_at::SerializeOptions;
 
 use super::responses::{
     AppEuiGet as AppEuiGetVal, AppKeyGet as AppKeyGetVal, DevEuiGet as DevEuiGetVal,
-    LoraClassGet as LoraClassGetVal, LoraJoinMode, LoraJoinResponse, LoraMaxTxLength,
-    LoraReceivedBytesResponseRaw, LoraRegionGet as LoraRegionGetVal,
-    LoraSendBytesResponseUnprocessed, DrSetResponse, UplinkFrameCountResponse, DownlinkFrameCountResponse
+    DownlinkFrameCountResponse, DrSetResponse, LoraClassGet as LoraClassGetVal, LoraJoinMode,
+    LoraJoinResponse, LoraMaxTxLength, LoraReceivedBytesResponseRaw,
+    LoraRegionGet as LoraRegionGetVal, LoraSendBytesResponseUnprocessed, UplinkFrameCountResponse,
 };
 
 use super::types::{LoraClass, LoraRegion};
